@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import List
 import logging
-import sys
+import functools
 from typing import Optional
 from snowcli.exception import MissingConfiguration
 from snowcli.cli.project.definition import load_project_definition
@@ -18,27 +18,26 @@ class DefinitionManager:
 
     config: dict
     project_path: Path
+    project_path_arg: str
 
-    def __init__(self) -> None:
+    def __init__(self, project: str = "") -> None:
+        self.project_path_arg = project
         pass
 
     def _find_project_path(self) -> Path:
-        project_path_temp = Path(os.getcwd())
-        for arg in sys.argv:
-            if arg.lower().startswith("--project=") or arg.lower().startswith("-p="):
-                arg_val_arr = arg.split("=")
-                project_path_temp = Path(os.path.abspath(arg_val_arr[1]))
-        return project_path_temp
+        project_path = Path(os.getcwd())
+        if self.project_path_arg and len(self.project_path_arg) > 0:
+            project_path = Path(os.path.abspath(self.project_path_arg))
+        return project_path
 
     def _find_config_files(self, project_path: Path) -> Optional[List[Path]]:
         parent_path = project_path
         starting_mount = project_path.is_mount()
         while parent_path:
-            parent_path_str = str(parent_path)
             if (
                 project_path.is_mount() != starting_mount
-                or parent_path_str == "/"
-                or parent_path_str == str(Path.home())
+                or str(parent_path) == "/"
+                or parent_path == Path.home()
             ):
                 return None
             base_config_file_path = self._is_base_config_file_available(parent_path)
@@ -47,13 +46,13 @@ class DefinitionManager:
                 if user_config_file_path:
                     return [base_config_file_path, user_config_file_path]
                 return [base_config_file_path]
-            parent_path = parent_path.parent.absolute()
+            parent_path = parent_path.parent
         return None
 
     def _is_config_available(
         self, config_filename, project_path: Path
     ) -> Optional[Path]:
-        config_file_path = Path(str(project_path) + "/" + config_filename)
+        config_file_path = Path(project_path) / config_filename
         if config_file_path.is_file():
             return config_file_path
         return None
@@ -64,10 +63,8 @@ class DefinitionManager:
     def _is_user_config_file_available(self, project_path: Path) -> Optional[Path]:
         return self._is_config_available(self.USER_CONFIG_FILENAME, project_path)
 
+    @functools.cache
     def load_project_definition(self) -> dict:
-        if self.config:
-            return self.config
-
         project_path = self._find_project_path()
         self.project_path = project_path
         config_files = self._find_config_files(project_path)
@@ -76,5 +73,4 @@ class DefinitionManager:
                 f"Cannot find native app project configuration. Please provide or run this command in a valid native app project directory."
             )
 
-        self.config = load_project_definition(config_files)
-        return self.config
+        return load_project_definition(config_files)
