@@ -13,7 +13,7 @@ definition_manager = DefinitionManager()
 def test_no_project_parameter_provided():
     testargs = ["snow", "app", "init"]
     with mock.patch.object(sys, "argv", testargs):
-        with mock.patch.object(os, "getcwd", "/hello/world"):
+        with mock.patch.object(os, "getcwd()", "/hello/world"):
             project_path = definition_manager._find_project_path()
             assert project_path == "/hello/world"
 
@@ -21,7 +21,7 @@ def test_no_project_parameter_provided():
 def test_double_dash_project_parameter_provided():
     testargs = ["snow", "app", "init", "--project=/hello/world/test"]
     with mock.patch.object(sys, "argv", testargs):
-        with mock.patch.object(os, "getcwd", "/hello/world"):
+        with mock.patch.object(os, "getcwd()", "/hello/world"):
             project_path = definition_manager._find_project_path()
             assert project_path == "/hello/world/test"
 
@@ -29,7 +29,7 @@ def test_double_dash_project_parameter_provided():
 def test_dash_p_parameter_provided():
     testargs = ["snow", "app", "init", "-p=/hello/world/test/again"]
     with mock.patch.object(sys, "argv", testargs):
-        with mock.patch.object(os, "getcwd", "/hello/world"):
+        with mock.patch.object(os, "getcwd()", "/hello/world"):
             project_path = definition_manager._find_project_path()
             assert project_path == "/hello/world/test/again"
 
@@ -39,7 +39,7 @@ def test_dash_p_with_replative_parameter_provided(mock_abs):
     testargs = ["snow", "app", "init", "-p=./relative"]
     mock_abs.return_value = "/hello/world/relative"
     with mock.patch.object(sys, "argv", testargs):
-        with mock.patch.object(os, "getcwd", "/hello/world"):
+        with mock.patch.object(os, "getcwd()", "/hello/world"):
             project_path = definition_manager._find_project_path()
             assert project_path == "/hello/world/relative"
 
