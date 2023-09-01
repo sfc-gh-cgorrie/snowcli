@@ -1,12 +1,8 @@
 from unittest import TestCase, mock
 from pathlib import Path
-from unittest.case import _AssertRaisesContext
-from src.snowcli.exception import MissingConfiguration
 from tests.project.fixtures import *
 from tests.testing_utils.fixtures import *
-import sys
-import typer
-import unittest
+
 
 from snowcli.cli.project.definition_manager import DefinitionManager
 
