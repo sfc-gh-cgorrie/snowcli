@@ -23,14 +23,14 @@ class DefinitionManager:
         search_path = Path(os.getcwd())
         if project and len(project) > 0:
             search_path = Path(os.path.abspath(project))
-        config_files = self.find_config_files(search_path)
+        config_files = self._find_config_files(search_path)
         if not config_files:
             raise MissingConfiguration(
                 f"Cannot find native app project configuration. Please provide or run this command in a valid native app project directory."
             )
         self._project_config_paths = config_files
 
-    def find_config_files(self, project_path: Path) -> Optional[List[Path]]:
+    def _find_config_files(self, project_path: Path) -> Optional[List[Path]]:
         parent_path = project_path
         starting_mount = project_path.is_mount()
         while parent_path:

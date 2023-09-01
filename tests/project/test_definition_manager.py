@@ -12,9 +12,12 @@ from snowcli.cli.project.definition_manager import DefinitionManager
 
 
 class MyTest(TestCase):
+
+    exception_message = "Cannot find native app project configuration. Please provide or run this command in a valid native app project directory."
+
     @mock.patch("os.getcwd", return_value="/hello/world")
     @mock.patch(
-        "snowcli.cli.project.definition_manager.DefinitionManager.find_config_files",
+        "snowcli.cli.project.definition_manager.DefinitionManager._find_config_files",
         return_value=[Path("/hello/world")],
     )
     def test_no_project_parameter_provided(self, mock_config_files, mock_getcwd):
@@ -24,7 +27,7 @@ class MyTest(TestCase):
 
     @mock.patch("os.getcwd", return_value="/hello/world")
     @mock.patch(
-        "snowcli.cli.project.definition_manager.DefinitionManager.find_config_files",
+        "snowcli.cli.project.definition_manager.DefinitionManager._find_config_files",
         return_value=[Path("/hello/world")],
     )
     @mock.patch("os.path.abspath", return_value="/hello/world/test")
@@ -37,7 +40,7 @@ class MyTest(TestCase):
 
     @mock.patch("os.getcwd", return_value="/hello/world")
     @mock.patch(
-        "snowcli.cli.project.definition_manager.DefinitionManager.find_config_files",
+        "snowcli.cli.project.definition_manager.DefinitionManager._find_config_files",
         return_value=[Path("/hello/world")],
     )
     @mock.patch("os.path.abspath", return_value="/hello/world/test/again")
@@ -48,7 +51,7 @@ class MyTest(TestCase):
 
     @mock.patch("os.getcwd", return_value="/hello/world")
     @mock.patch(
-        "snowcli.cli.project.definition_manager.DefinitionManager.find_config_files",
+        "snowcli.cli.project.definition_manager.DefinitionManager._find_config_files",
         return_value=[Path("/hello/world")],
     )
     @mock.patch("os.path.abspath", return_value="/hello/world/relative")
@@ -73,10 +76,7 @@ class MyTest(TestCase):
         with pytest.raises(Exception) as exception:
             definition_manager = DefinitionManager("/tmp")
             assert definition_manager.project_root == None
-        assert (
-            str(exception.value)
-            == "Cannot find native app project configuration. Please provide or run this command in a valid native app project directory."
-        )
+        assert str(exception.value) == self.exception_message
 
     @mock.patch("os.getcwd", return_value="/hello/world")
     @mock.patch(
@@ -91,7 +91,4 @@ class MyTest(TestCase):
         with pytest.raises(Exception) as exception:
             definition_manager = DefinitionManager("/usr/user1/project")
             assert definition_manager.project_root == None
-        assert (
-            str(exception.value)
-            == "Cannot find native app project configuration. Please provide or run this command in a valid native app project directory."
-        )
+        assert str(exception.value) == self.exception_message
