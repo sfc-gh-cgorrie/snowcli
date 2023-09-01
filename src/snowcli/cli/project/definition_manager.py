@@ -16,25 +16,21 @@ class DefinitionManager:
     BASE_CONFIG_FILENAME = "snowflake.yml"
     USER_CONFIG_FILENAME = "snowflake.local.yml"
 
-    project_definition: dict
     project_root: Path
-    project_path_arg: str
+    _project_config_paths: List[Path]
 
     def __init__(self, project: str = "") -> None:
-        self.project_path_arg = project
-        pass
-
-    def get_project_root(self) -> Path:
-        return self.project_root
-
-    def _find_project_path(self) -> Path:
         search_path = Path(os.getcwd())
-        if self.project_path_arg and len(self.project_path_arg) > 0:
-            search_path = Path(os.path.abspath(self.project_path_arg))
-        self.project_root = search_path
-        return self.project_root
+        if project and len(project) > 0:
+            search_path = Path(os.path.abspath(project))
+        config_files = self.find_config_files(search_path)
+        if not config_files:
+            raise MissingConfiguration(
+                f"Cannot find native app project configuration. Please provide or run this command in a valid native app project directory."
+            )
+        self._project_config_paths = config_files
 
-    def _find_config_files(self, project_path: Path) -> Optional[List[Path]]:
+    def find_config_files(self, project_path: Path) -> Optional[List[Path]]:
         parent_path = project_path
         starting_mount = project_path.is_mount()
         while parent_path:
@@ -44,12 +40,16 @@ class DefinitionManager:
                 or parent_path == Path.home()
             ):
                 return None
-            base_config_file_path = self._is_base_config_file_available(parent_path)
+            base_config_file_path = self._base_config_file_if_available(parent_path)
             if base_config_file_path:
-                user_config_file_path = self._is_user_config_file_available(parent_path)
+                user_config_file_path = self._user_config_file_if_available(parent_path)
+                self.project_root = parent_path
                 if user_config_file_path:
-                    return [base_config_file_path, user_config_file_path]
-                return [base_config_file_path]
+                    self._project_config_paths = [
+                        base_config_file_path,
+                        user_config_file_path,
+                    ]
+                self._project_config_paths = [base_config_file_path]
             parent_path = parent_path.parent
         return None
 
@@ -61,19 +61,12 @@ class DefinitionManager:
             return config_file_path
         return None
 
-    def _is_base_config_file_available(self, project_path: Path) -> Optional[Path]:
+    def _base_config_file_if_available(self, project_path: Path) -> Optional[Path]:
         return self._config_if_available(self.BASE_CONFIG_FILENAME, project_path)
 
-    def _is_user_config_file_available(self, project_path: Path) -> Optional[Path]:
+    def _user_config_file_if_available(self, project_path: Path) -> Optional[Path]:
         return self._config_if_available(self.USER_CONFIG_FILENAME, project_path)
 
     @functools.cached_property
-    def get_project_definition(self) -> dict:
-        project_root = self._find_project_path()
-        config_files = self._find_config_files(project_root)
-        if not config_files:
-            raise MissingConfiguration(
-                f"Cannot find native app project configuration. Please provide or run this command in a valid native app project directory."
-            )
-        self.project_definition = load_project_definition(config_files)
-        return self.project_definition
+    def project_definition(self) -> dict:
+        return load_project_definition(self._project_config_paths)
