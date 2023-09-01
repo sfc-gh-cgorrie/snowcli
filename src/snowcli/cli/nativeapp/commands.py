@@ -53,6 +53,9 @@ def nativeapp_init(
 def nativeapp_bundle(
     project_path: Optional[str] = ProjectArgument,
 ) -> OutputData:
+    """
+    Prepares a local folder with configured app artifacts.
+    """
     manager = NativeAppManager(project_path)
     manager.build_bundle()
     return OutputData.from_string(f"Bundle generated at {manager.deploy_root}")
