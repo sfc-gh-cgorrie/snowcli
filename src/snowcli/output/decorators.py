@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typer
+
 from functools import wraps
 
 from snowcli.exception import CommandReturnTypeError
