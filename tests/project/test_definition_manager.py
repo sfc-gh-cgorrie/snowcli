@@ -13,13 +13,15 @@ class DefinitionManagerTest(TestCase):
 
     @mock.patch(
         "snowcli.cli.project.definition_manager.DefinitionManager._find_config_files",
-        return_value=[Path("/hello/world")],
+        return_value=[Path("/hello/world/snowflake.yml")],
     )
     @mock.patch("os.getcwd", return_value="/hello/world")
     def test_no_project_parameter_provided(self, mock_getcwd, mock_config_files):
         definition_manager = DefinitionManager()
         mock_config_files.assert_called_with(Path("/hello/world"))
-        assert definition_manager._project_config_paths == [Path("/hello/world")]
+        assert definition_manager._project_config_paths == [
+            Path("/hello/world/snowflake.yml")
+        ]
 
     @mock.patch(
         "snowcli.cli.project.definition_manager.DefinitionManager._find_config_files",

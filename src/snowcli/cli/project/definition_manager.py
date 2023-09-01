@@ -20,10 +20,10 @@ class DefinitionManager:
     _project_config_paths: List[Path]
 
     def __init__(self, project: str = "") -> None:
-        search_path = Path(os.getcwd())
+        search_path = os.getcwd()
         if project and len(project) > 0:
-            search_path = Path(os.path.abspath(project))
-        config_files = self._find_config_files(search_path)
+            search_path = os.path.abspath(project)
+        config_files = self._find_config_files(Path(search_path))
         if not config_files:
             raise MissingConfiguration(
                 f"Cannot find native app project configuration. Please provide or run this command in a valid native app project directory."
