@@ -25,10 +25,9 @@ class DefinitionManager:
         pass
 
     def _find_project_path(self) -> Path:
-        search_path = Path(os.getcwd())
+        project_path = Path(os.getcwd())
         if self.project_path_arg and len(self.project_path_arg) > 0:
             project_path = Path(os.path.abspath(self.project_path_arg))
-
         return project_path
 
     def _find_config_files(self, project_path: Path) -> Optional[List[Path]]:
