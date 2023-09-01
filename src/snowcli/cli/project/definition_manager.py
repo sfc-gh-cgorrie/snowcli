@@ -17,18 +17,22 @@ class DefinitionManager:
     USER_CONFIG_FILENAME = "snowflake.local.yml"
 
     project_definition: dict
-    project_path: Path
+    project_root: Path
     project_path_arg: str
 
     def __init__(self, project: str = "") -> None:
         self.project_path_arg = project
         pass
 
+    def get_project_root(self) -> Path:
+        return self.project_root
+
     def _find_project_path(self) -> Path:
-        project_path = Path(os.getcwd())
+        search_path = Path(os.getcwd())
         if self.project_path_arg and len(self.project_path_arg) > 0:
-            project_path = Path(os.path.abspath(self.project_path_arg))
-        return project_path
+            search_path = Path(os.path.abspath(self.project_path_arg))
+        self.project_root = search_path
+        return self.project_root
 
     def _find_config_files(self, project_path: Path) -> Optional[List[Path]]:
         parent_path = project_path
@@ -65,9 +69,8 @@ class DefinitionManager:
 
     @functools.cached_property
     def get_project_definition(self) -> dict:
-        project_path = self._find_project_path()
-        self.project_path = project_path
-        config_files = self._find_config_files(project_path)
+        project_root = self._find_project_path()
+        config_files = self._find_config_files(project_root)
         if not config_files:
             raise MissingConfiguration(
                 f"Cannot find native app project configuration. Please provide or run this command in a valid native app project directory."
