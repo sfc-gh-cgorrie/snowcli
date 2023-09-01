@@ -25,28 +25,32 @@ class DefinitionManagerTest(TestCase):
 
     @mock.patch(
         "snowcli.cli.project.definition_manager.DefinitionManager._find_config_files",
-        return_value=[Path("/hello/world")],
+        return_value=[Path("/hello/world/snowflake.yml")],
     )
     @mock.patch("os.path.abspath", return_value="/hello/world/test")
     def test_double_dash_project_parameter_provided(self, mock_abs, mock_config_files):
         definition_manager = DefinitionManager("/hello/world/test")
         mock_config_files.assert_called_with(Path("/hello/world/test"))
-        assert definition_manager._project_config_paths == [Path("/hello/world")]
+        assert definition_manager._project_config_paths == [
+            Path("/hello/world/snowflake.yml")
+        ]
 
     @mock.patch(
         "snowcli.cli.project.definition_manager.DefinitionManager._find_config_files",
-        return_value=[Path("/hello/world")],
+        return_value=[Path("/hello/world/snowflake.yml")],
     )
     @mock.patch("os.path.abspath", return_value="/hello/world/test/again")
     def test_dash_p_parameter_provided(self, mock_abs, mock_config_files):
         definition_manager = DefinitionManager("/hello/world/test/again")
         mock_config_files.assert_called_with(Path("/hello/world/test/again"))
-        assert definition_manager._project_config_paths == [Path("/hello/world")]
+        assert definition_manager._project_config_paths == [
+            Path("/hello/world/snowflake.yml")
+        ]
 
     @mock.patch("os.getcwd", return_value="/hello/world")
     @mock.patch(
         "snowcli.cli.project.definition_manager.DefinitionManager._find_config_files",
-        return_value=[Path("/hello/world")],
+        return_value=[Path("/hello/world/snowflake.yml")],
     )
     @mock.patch("os.path.abspath", return_value="/hello/world/relative")
     def test_dash_p_with_relative_parameter_provided(
@@ -56,7 +60,9 @@ class DefinitionManagerTest(TestCase):
         definition_manager = DefinitionManager("./relative")
         mock_abs.assert_called_with("./relative")
         mock_config_files.assert_called_with(Path("/hello/world/relative"))
-        assert definition_manager._project_config_paths == [Path("/hello/world")]
+        assert definition_manager._project_config_paths == [
+            Path("/hello/world/snowflake.yml")
+        ]
 
     @mock.patch(
         "snowcli.cli.project.definition_manager.DefinitionManager._base_config_file_if_available",
