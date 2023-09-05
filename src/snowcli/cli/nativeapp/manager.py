@@ -5,6 +5,9 @@ from functools import cached_property
 from typing import List, Optional
 
 from snowcli.cli.common.sql_execution import SqlExecutionMixin
+from snowcli.cli.project.definition import DEFAULT_USERNAME
+from snowcli.cli.project.util import clean_identifier, get_env_username
+from snowcli.cli.render.commands import generic_render_template
 from snowcli.utils import get_client_git_version
 
 from .artifacts import build_bundle, translate_artifact, SrcDestPair
