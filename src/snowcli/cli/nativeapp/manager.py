@@ -5,9 +5,13 @@ from functools import cached_property
 from typing import List, Optional
 
 from snowcli.cli.common.sql_execution import SqlExecutionMixin
+from snowcli.utils import get_client_git_version
 
 from .artifacts import build_bundle, translate_artifact, SrcDestPair
 from ..project.definition_manager import DefinitionManager
+
+SNOWFLAKELABS_GITHUB_URL = "https://github.com/Snowflake-Labs/native-app-templates"
+BASIC_TEMPLATE = "native-app-basic"
 
 
 class NativeAppManager(SqlExecutionMixin):
