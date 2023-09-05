@@ -3,13 +3,10 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import List
-import logging
 import functools
 from typing import Optional
 from snowcli.exception import MissingConfiguration
 from snowcli.cli.project.definition import load_project_definition
-
-log = logging.getLogger(__name__)
 
 
 class DefinitionManager:
@@ -26,7 +23,7 @@ class DefinitionManager:
         config_files = self._find_config_files(Path(search_path))
         if not config_files:
             raise MissingConfiguration(
-                f"Cannot find native app project configuration. Please provide or run this command in a valid native app project directory."
+                f"Cannot find native app project configuration. Please provide a path to the project or run this command in a valid native app project directory."
             )
         self._project_config_paths = config_files
 
