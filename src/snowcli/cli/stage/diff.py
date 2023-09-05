@@ -39,6 +39,19 @@ def compute_md5sum(file: Path) -> str:
             "The provided file does not exist or not a (symlink to a) regular file"
         )
 
+    # FIXME: there are two cases in which this will fail to provide a matching
+    # md5sum, even when the underlying file is the same:
+    #  1. when the stage uses SNOWFLAKE_FULL encryption
+    #  2. when the file was uploaded in multiple parts
+
+    # We can re-create the second if we know what chunk size was used by the
+    # upload process to the backing object store (e.g. S3, azure blob, etc.)
+    # but we cannot re-create the first as the encrpytion key is hidden.
+
+    # We are assuming that we will not get accidental collisions here due to the
+    # large space of the md5sum (32 * 4 = 128 bits means 1-in-9-trillion chance)
+    # combined with the fact that the file name + path must also match elsewhere.
+
     with open(file, "rb") as f:
         file_hash = hashlib.md5()
         while chunk := f.read(8192):
@@ -64,20 +77,27 @@ def enumerate_files(path: Path) -> List[Path]:
     return paths
 
 
+def strip_stage_name(path: str) -> str:
+    """Returns the given stage path without the stage name as the first part."""
+    return "/".join(path.split("/")[1:])
+
+
 def build_md5_map(list_stage_cursor: SnowflakeCursor) -> dict[str, str]:
     """
     Returns a mapping of relative stage paths to their md5sums.
     """
-    # XXX: how can I get dicts back here?
-    return {name: md5 for (name, size, md5, modified) in list_stage_cursor.fetchall()}
+    return {
+        # XXX: how can we get dicts back here?
+        strip_stage_name(name): md5
+        for (name, size, md5, modified) in list_stage_cursor.fetchall()
+    }
 
 
 def stage_diff(local_path: Path, stage_fqn: str) -> DiffResult:
+    """
+    Diffs the files in a stage with a local folder.
+    """
     stage_manager = StageManager()
-
-    # N.B. we could compare local size vs remote size, but after seeing a comment
-    # that says the value may not be correctly populated, we'll just skip it.
-
     local_files = enumerate_files(local_path)
     remote_md5 = build_md5_map(stage_manager.list(stage_fqn))
 
@@ -89,8 +109,13 @@ def stage_diff(local_path: Path, stage_fqn: str) -> DiffResult:
             # doesn't exist on the stage
             result.only_local.append(relpath)
         else:
+            # N.B. we could compare local size vs remote size to skip the relatively-
+            # expensive md5sum operation, but after seeing a comment that says the value
+            # may not always be correctly populated, we'll just skip it.
             stage_md5sum = remote_md5[relpath]
-            if is_valid_md5sum() and stage_md5sum == compute_md5sum(local_file):
+            if is_valid_md5sum(stage_md5sum) and stage_md5sum == compute_md5sum(
+                local_file
+            ):
                 # the file definitely hasn't changed
                 result.unmodified.append(relpath)
             else:
