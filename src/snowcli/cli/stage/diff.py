@@ -111,7 +111,7 @@ def stage_diff(local_path: Path, stage_fqn: str) -> DiffResult:
         else:
             # N.B. we could compare local size vs remote size to skip the relatively-
             # expensive md5sum operation, but after seeing a comment that says the value
-            # may not always be correctly populated, we'll just skip it.
+            # may not always be correctly populated, we'll ignore that column.
             stage_md5sum = remote_md5[relpath]
             if is_valid_md5sum(stage_md5sum) and stage_md5sum == compute_md5sum(
                 local_file
