@@ -31,7 +31,7 @@ def md5_of(contents: Union[str, bytes]) -> str:
 
 
 def stage_contents(
-    files: Dict[str, Union[str, bytes]], last_modified=DEFAULT_LAST_MODIFIED
+    files: Dict[str, Union[str, bytes]], last_modified: str = DEFAULT_LAST_MODIFIED
 ) -> List[Tuple[str, int, bytes, str]]:
     """
     Return file contents as they would be listed by a SNOWFLAKE_SSE stage

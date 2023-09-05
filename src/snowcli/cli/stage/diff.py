@@ -27,7 +27,7 @@ def is_valid_md5sum(checksum: str) -> bool:
     """
     Could the provided hexadecimal checksum represent a valid md5sum?
     """
-    return re.match(MD5SUM_REGEX, checksum)
+    return re.match(MD5SUM_REGEX, checksum) is not None
 
 
 def compute_md5sum(file: Path) -> str:
