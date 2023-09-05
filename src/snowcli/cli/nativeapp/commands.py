@@ -83,10 +83,9 @@ def stage_list(
 
     diff = stage_diff(Path(folder_name), stage_fqn)
     output = f"""\
-        only local: {', '.join(diff.only_local)}
-        only stage: {', '.join(diff.only_on_stage)}
-        modified:   {', '.join(diff.modified)}
-        unmodified: {', '.join(diff.unmodified)}
-    """
+        only local:  {', '.join(diff.only_local)}
+        only stage:  {', '.join(diff.only_on_stage)}
+        mod/unknown: {', '.join(diff.modified)}
+        unmodified:  {', '.join(diff.unmodified)}"""
 
     return OutputData.from_string(dedent(output))
