@@ -28,7 +28,7 @@ BASIC_TEMPLATE = "native-app-basic"
 class NativeAppManager(SqlExecutionMixin):
     # definition_manager: DefinitionManager
 
-    def __init__(self, search_path: Optional[str]):
+    def __init__(self, search_path: Optional[str] = None):
         super().__init__()
         # self.definition_manager = DefinitionManager(search_path)
 
