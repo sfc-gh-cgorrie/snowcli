@@ -2,7 +2,7 @@ import re
 import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 from snowflake.connector.cursor import SnowflakeCursor
 from .manager import StageManager
@@ -90,7 +90,7 @@ def strip_stage_name(path: str) -> str:
     return "/".join(path.split("/")[1:])
 
 
-def build_md5_map(list_stage_cursor: SnowflakeCursor) -> dict[str, str]:
+def build_md5_map(list_stage_cursor: SnowflakeCursor) -> Dict[str, str]:
     """
     Returns a mapping of relative stage paths to their md5sums.
     """
