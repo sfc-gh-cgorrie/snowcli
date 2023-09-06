@@ -1,12 +1,9 @@
 import hashlib
-from typing import Union, Generator, Dict, List, Tuple
-from pathlib import Path
+from typing import Union, Dict, List, Tuple
 from unittest import mock
-from tempfile import TemporaryDirectory
-
-from contextlib import contextmanager
 
 from tests.testing_utils.fixtures import *
+from tests.testing_utils.files_and_dirs import temp_local_dir
 
 from snowcli.cli.stage.diff import stage_diff
 
@@ -41,25 +38,6 @@ def stage_contents(
         (f"stage/{relpath}", len(contents), md5_of(contents), last_modified)
         for (relpath, contents) in files.items()
     ]
-
-
-@contextmanager
-def temp_local_dir(files: Dict[str, Union[str, bytes]]) -> Generator[Path, None, None]:
-    """
-    Creates a temporary local directory structure from a dictionary
-    of local paths and their file contents (either strings to be encoded
-    as UTF-8, or binary bytes).
-    """
-    with TemporaryDirectory() as tmpdir:
-        for relpath, contents in files.items():
-            path = Path(tmpdir, relpath)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            mode = "wb" if isinstance(contents, bytes) else "w"
-            encoding = None if isinstance(contents, bytes) else "UTF-8"
-            with open(path, mode=mode, encoding=encoding) as fh:
-                fh.write(contents)
-
-        yield Path(tmpdir)
 
 
 @mock.patch(f"{STAGE_MANAGER}.list")
