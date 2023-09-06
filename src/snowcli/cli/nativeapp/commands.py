@@ -15,9 +15,12 @@ from .manager import NativeAppManager
 from .artifacts import ArtifactError
 
 
+from .manager import NativeAppManager
+from .artifacts import ArtifactError
+
 app = typer.Typer(
     context_settings=DEFAULT_CONTEXT_SETTINGS,
-    hidden=True,
+    hidden=False,
     name="app",
     help="Manage Native Apps in Snowflake",
 )
@@ -51,9 +54,10 @@ def nativeapp_init(
     return OutputData.from_string(
         f"Native Apps project {name} has been created in your local directory."
     )
+    pass
 
 
-@app.command("bundle")
+@app.command("bundle", hidden=True)
 @with_output
 @catch_error(ArtifactError, exit_code=1)
 def nativeapp_bundle(
