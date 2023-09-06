@@ -18,10 +18,17 @@ class DiffResult:
     the stage root or from the root of the compared local directory.
     """
 
-    unmodified: List[str] = field(default_factory=list)
-    modified: List[str] = field(default_factory=list)
+    identical: List[str] = field(default_factory=list)
+    "Files with matching md5sums"
+
+    different: List[str] = field(default_factory=list)
+    "Files that may be different between the stage and the local directory"
+
     only_local: List[str] = field(default_factory=list)
+    "Files that only exist in the local directory"
+
     only_on_stage: List[str] = field(default_factory=list)
+    "Files that only exist on the stage"
 
 
 def is_valid_md5sum(checksum: str) -> bool:
@@ -118,10 +125,10 @@ def stage_diff(local_path: Path, stage_fqn: str) -> DiffResult:
                 local_file
             ):
                 # the file definitely hasn't changed
-                result.unmodified.append(relpath)
+                result.identical.append(relpath)
             else:
                 # either the file has changed, or we can't tell if it has
-                result.modified.append(relpath)
+                result.different.append(relpath)
 
             # mark this file as seen
             del remote_md5[relpath]

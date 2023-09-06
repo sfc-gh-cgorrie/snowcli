@@ -54,7 +54,6 @@ def nativeapp_init(
     return OutputData.from_string(
         f"Native Apps project {name} has been created in your local directory."
     )
-    pass
 
 
 @app.command("bundle", hidden=True)
@@ -86,7 +85,7 @@ def nativeapp_stage_diff(
     output = f"""\
         only local:  {', '.join(diff.only_local)}
         only stage:  {', '.join(diff.only_on_stage)}
-        mod/unknown: {', '.join(diff.modified)}
-        unmodified:  {', '.join(diff.unmodified)}"""
+        mod/unknown: {', '.join(diff.different)}
+        identical:   {', '.join(diff.identical)}"""
 
     return OutputData.from_string(dedent(output))

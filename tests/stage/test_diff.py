@@ -69,8 +69,8 @@ def test_empty_stage(mock_list, mock_cursor):
     with temp_local_dir(FILE_CONTENTS) as local_path:
         diff_result = stage_diff(local_path, "a.b.c")
         assert len(diff_result.only_on_stage) == 0
-        assert len(diff_result.modified) == 0
-        assert len(diff_result.unmodified) == 0
+        assert len(diff_result.different) == 0
+        assert len(diff_result.identical) == 0
         assert sorted(diff_result.only_local) == sorted(FILE_CONTENTS.keys())
 
 
@@ -84,8 +84,8 @@ def test_empty_dir(mock_list, mock_cursor):
     with temp_local_dir({}) as local_path:
         diff_result = stage_diff(local_path, "a.b.c")
         assert sorted(diff_result.only_on_stage) == sorted(FILE_CONTENTS.keys())
-        assert len(diff_result.modified) == 0
-        assert len(diff_result.unmodified) == 0
+        assert len(diff_result.different) == 0
+        assert len(diff_result.identical) == 0
         assert len(diff_result.only_local) == 0
 
 
@@ -99,8 +99,8 @@ def test_identical_stage(mock_list, mock_cursor):
     with temp_local_dir(FILE_CONTENTS) as local_path:
         diff_result = stage_diff(local_path, "a.b.c")
         assert len(diff_result.only_on_stage) == 0
-        assert len(diff_result.modified) == 0
-        assert sorted(diff_result.unmodified) == sorted(FILE_CONTENTS.keys())
+        assert len(diff_result.different) == 0
+        assert sorted(diff_result.identical) == sorted(FILE_CONTENTS.keys())
         assert len(diff_result.only_local) == 0
 
 
@@ -116,8 +116,8 @@ def test_new_local_file(mock_list, mock_cursor):
     ) as local_path:
         diff_result = stage_diff(local_path, "a.b.c")
         assert len(diff_result.only_on_stage) == 0
-        assert len(diff_result.modified) == 0
-        assert sorted(diff_result.unmodified) == sorted(FILE_CONTENTS.keys())
+        assert len(diff_result.different) == 0
+        assert sorted(diff_result.identical) == sorted(FILE_CONTENTS.keys())
         assert diff_result.only_local == ["a/new/README.md"]
 
 
@@ -136,6 +136,6 @@ def test_modified_file(mock_list, mock_cursor):
     ) as local_path:
         diff_result = stage_diff(local_path, "a.b.c")
         assert len(diff_result.only_on_stage) == 0
-        assert sorted(diff_result.modified) == ["README.md"]
-        assert sorted(diff_result.unmodified) == ["my.jar", "ui/streamlit.py"]
+        assert sorted(diff_result.different) == ["README.md"]
+        assert sorted(diff_result.identical) == ["my.jar", "ui/streamlit.py"]
         assert len(diff_result.only_local) == 0
