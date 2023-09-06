@@ -37,7 +37,6 @@ class DefinitionManager:
                 or parent_path == Path.home()
             ):
                 return None
-
             base_config_file_path = self._base_config_file_if_available(parent_path)
             if base_config_file_path:
                 user_config_file_path = self._user_config_file_if_available(parent_path)
