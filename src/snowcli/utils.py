@@ -594,17 +594,12 @@ def get_client_git_version():
     Returns:
         str: the major and minor version of git, e.g. "2.25"
     """
-    try:
-        output = subprocess.check_output(["git", "--version"], text=True)
-        pattern = r"git version (\d+\.\d+)"
-        match_found = re.search(pattern, output.strip())
-        if match_found:
-            git_version = match_found.group(1)
-            return git_version
-        else:
-            raise subprocess.CalledProcessError(
-                1, "Could not find a version for git. Please install git."
-            )
-    except subprocess.CalledProcessError as err:
-        log.error(err.stderr)
-        raise err
+    output = subprocess.check_output(["git", "--version"], text=True)
+    pattern = r"git version (\d+\.\d+)"
+    match_found = re.search(pattern, output.strip())
+    if match_found:
+        git_version = match_found.group(1)
+        return git_version
+    else:
+        log.error("Could not find a version for git")
+        raise typer.Abort()

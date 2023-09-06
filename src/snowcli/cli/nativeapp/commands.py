@@ -2,18 +2,18 @@ from typing import Optional
 import logging
 import typer
 
-from snowcli.cli.common.decorators import global_options_with_connection
+from snowcli.cli.common.decorators import global_options_with_connection, global_options
 from snowcli.cli.common.flags import DEFAULT_CONTEXT_SETTINGS
 from snowcli.output.decorators import with_output, catch_error
 from snowcli.output.printing import OutputData
 
-from .init import nativeapp_init
+from .init import InitError, nativeapp_init
 from .manager import NativeAppManager
 from .artifacts import ArtifactError
 
 app = typer.Typer(
     context_settings=DEFAULT_CONTEXT_SETTINGS,
-    hidden=True,
+    # hidden=True,
     name="app",
     help="Manage Native Apps in Snowflake",
 )
@@ -28,15 +28,17 @@ ProjectArgument = typer.Option(
     show_default=False,
 )
 
-
+# @global_options
 @app.command("init")
 @with_output
+@catch_error(InitError, exit_code=1)
 def app_init(
     name: str = typer.Argument(
         ..., help="Name of the Native Apps project to be initiated."
     ),
     template: str = typer.Option(
-        None, help="A git URL to use as template for the Native Apps project."
+        None,
+        help="A git URL to use as template for the Native Apps project. Example: https://github.com/Snowflake-Labs/native-apps-templates.git",
     ),
 ) -> OutputData:
     """
