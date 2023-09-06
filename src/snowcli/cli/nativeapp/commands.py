@@ -15,6 +15,7 @@ from .manager import NativeAppManager
 from .artifacts import ArtifactError
 
 
+from .init import nativeapp_init
 from .manager import NativeAppManager
 from .artifacts import ArtifactError
 
@@ -38,7 +39,7 @@ ProjectArgument = typer.Option(
 
 @app.command("init")
 @with_output
-def nativeapp_init(
+def app_init(
     name: str = typer.Argument(
         ..., help="Name of the Native Apps project to be initiated."
     ),
@@ -49,8 +50,7 @@ def nativeapp_init(
     """
     Initialize a Native Apps project, optionally with a --template.
     """
-
-    NativeAppManager().nativeapp_init(name, template)
+    nativeapp_init(name, template)
     return OutputData.from_string(
         f"Native Apps project {name} has been created in your local directory."
     )
@@ -59,7 +59,7 @@ def nativeapp_init(
 @app.command("bundle", hidden=True)
 @with_output
 @catch_error(ArtifactError, exit_code=1)
-def nativeapp_bundle(
+def app_bundle(
     project_path: Optional[str] = ProjectArgument,
 ) -> OutputData:
     """
