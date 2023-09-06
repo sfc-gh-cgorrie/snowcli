@@ -42,7 +42,6 @@ def app_init(
     """
     Initialize a Native Apps project, optionally with a --template.
     """
-
     nativeapp_init(name, template)
     return OutputData.from_string(
         f"Native Apps project {name} has been created in your local directory."
