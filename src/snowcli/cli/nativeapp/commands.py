@@ -74,7 +74,7 @@ def nativeapp_bundle(
 @app.command("diff", hidden=True)
 @with_output
 @global_options_with_connection
-def stage_diff(
+def nativeapp_stage_diff(
     stage_fqn: str = typer.Argument(None, help="Name of stage"),
     folder_name: str = typer.Argument(None, help="Path to local folder"),
     **options,

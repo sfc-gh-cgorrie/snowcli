@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List
 
-from snowcli.snow_connector import SnowflakeConnector, SnowflakeCursor
+from snowflake.connector.cursor import SnowflakeCursor
 from .manager import StageManager
 
 MD5SUM_REGEX = r"^[A-Fa-f0-9]{32}$"
