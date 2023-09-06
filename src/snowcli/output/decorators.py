@@ -23,7 +23,7 @@ def with_output(func):
 
 
 def catch_error(
-    ExceptionClass: Type[Exception], message: Optional[str] = None, exit_code: int = 1
+    exception_class: Type[Exception], message: Optional[str] = None, exit_code: int = 1
 ):
     """
     Catches a specific type of exception and exits fatally, optionally with
@@ -35,7 +35,7 @@ def catch_error(
         def wrapper(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
-            except ExceptionClass as e:
+            except exception_class as e:
                 print(message if message else str(e), file=stderr)
                 raise typer.Exit(code=exit_code)
 
