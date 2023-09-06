@@ -46,7 +46,6 @@ def nativeapp_init(
     return OutputData.from_string(
         f"Native Apps project {name} has been created in your local directory."
     )
-    pass
 
 
 @app.command("bundle", hidden=True)
