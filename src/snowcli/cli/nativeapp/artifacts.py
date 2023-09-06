@@ -137,7 +137,6 @@ def build_bundle(project_root: Path, deploy_root: Path, artifacts: List[SrcDestP
     Prepares a local folder (deploy_root) with configured app artifacts.
     This folder can then be uploaded to a stage.
     """
-    deploy_root = deploy_root.resolve()
     if deploy_root.exists() and not deploy_root.is_dir():
         raise ValueError(f"Deploy root {deploy_root} exists, but is not a directory!")
 
@@ -155,9 +154,10 @@ def build_bundle(project_root: Path, deploy_root: Path, artifacts: List[SrcDestP
                 raise SourceNotFoundError(source_path)
 
         # make sure we are only modifying files / directories inside deploy_root
-        dest_path = Path(deploy_root, artifact.dest).resolve()
-        if deploy_root != dest_path and deploy_root not in dest_path.parents:
-            raise OutsideDeployRootError(dest_path, deploy_root)
+        resolved_root = deploy_root.resolve()
+        dest_path = Path(resolved_root, artifact.dest).resolve()
+        if resolved_root != dest_path and resolved_root not in dest_path.parents:
+            raise OutsideDeployRootError(dest_path, resolved_root)
 
         if dest_path.is_file():
             dest_path.unlink()

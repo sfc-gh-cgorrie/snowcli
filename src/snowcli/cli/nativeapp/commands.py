@@ -7,11 +7,12 @@ from textwrap import dedent
 
 from snowcli.cli.common.decorators import global_options_with_connection
 from snowcli.cli.common.flags import DEFAULT_CONTEXT_SETTINGS
-from snowcli.output.decorators import with_output
+from snowcli.output.decorators import with_output, catch_error
 from snowcli.output.printing import OutputData
 from snowcli.cli.stage.diff import stage_diff
 
 from .manager import NativeAppManager
+from .artifacts import ArtifactError
 
 
 app = typer.Typer(
@@ -54,6 +55,7 @@ def nativeapp_init(
 
 @app.command("bundle")
 @with_output
+@catch_error(ArtifactError, exit_code=1)
 def nativeapp_bundle(
     project_path: Optional[str] = ProjectArgument,
 ) -> OutputData:
