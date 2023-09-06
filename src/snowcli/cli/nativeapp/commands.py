@@ -4,10 +4,11 @@ import typer
 
 from snowcli.cli.common.decorators import global_options_with_connection
 from snowcli.cli.common.flags import DEFAULT_CONTEXT_SETTINGS
-from snowcli.output.decorators import with_output
+from snowcli.output.decorators import with_output, catch_error
 from snowcli.output.printing import OutputData
 
 from .manager import NativeAppManager
+from .artifacts import ArtifactError
 
 app = typer.Typer(
     context_settings=DEFAULT_CONTEXT_SETTINGS,
@@ -49,16 +50,13 @@ def nativeapp_init(
 
 @app.command("bundle")
 @with_output
+@catch_error(ArtifactError, exit_code=1)
 def nativeapp_bundle(
     project_path: Optional[str] = ProjectArgument,
 ) -> OutputData:
     """
     Prepares a local folder with configured app artifacts.
     """
-    try:
-        manager = NativeAppManager(project_path)
-        manager.build_bundle()
-        return OutputData.from_string(f"Bundle generated at {manager.deploy_root}")
-
-    except Exception as e:
-        return OutputData.from_string(str(e)).add_exit_code(1)
+    manager = NativeAppManager(project_path)
+    manager.build_bundle()
+    return OutputData.from_string(f"Bundle generated at {manager.deploy_root}")
