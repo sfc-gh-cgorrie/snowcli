@@ -31,7 +31,7 @@ ProjectArgument = typer.Option(
 
 @app.command("init")
 @with_output
-def nativeapp_init(
+def app_init(
     name: str = typer.Argument(
         ..., help="Name of the Native Apps project to be initiated."
     ),
@@ -52,7 +52,7 @@ def nativeapp_init(
 @app.command("bundle", hidden=True)
 @with_output
 @catch_error(ArtifactError, exit_code=1)
-def nativeapp_bundle(
+def app_bundle(
     project_path: Optional[str] = ProjectArgument,
 ) -> OutputData:
     """
