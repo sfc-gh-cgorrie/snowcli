@@ -20,7 +20,7 @@ from .artifacts import ArtifactError
 
 app = typer.Typer(
     context_settings=DEFAULT_CONTEXT_SETTINGS,
-    hidden=False,
+    hidden=True,
     name="app",
     help="Manage Native Apps in Snowflake",
 )
