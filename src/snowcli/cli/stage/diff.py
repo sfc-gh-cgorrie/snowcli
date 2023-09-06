@@ -8,6 +8,7 @@ from snowcli.snow_connector import SnowflakeConnector, SnowflakeCursor
 from .manager import StageManager
 
 MD5SUM_REGEX = r"^[A-Fa-f0-9]{32}$"
+CHUNK_SIZE_BYTES = 8192
 
 
 @dataclass
@@ -54,7 +55,7 @@ def compute_md5sum(file: Path) -> str:
 
     with open(file, "rb") as f:
         file_hash = hashlib.md5()
-        while chunk := f.read(8192):
+        while chunk := f.read(CHUNK_SIZE_BYTES):
             file_hash.update(chunk)
 
     return file_hash.hexdigest()

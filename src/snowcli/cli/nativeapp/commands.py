@@ -9,7 +9,7 @@ from snowcli.cli.common.decorators import global_options_with_connection
 from snowcli.cli.common.flags import DEFAULT_CONTEXT_SETTINGS
 from snowcli.output.decorators import with_output, catch_error
 from snowcli.output.printing import OutputData
-from snowcli.cli.stage.diff import stage_diff
+from snowcli.cli.stage.diff import stage_diff, DiffResult
 
 from .manager import NativeAppManager
 from .artifacts import ArtifactError
@@ -62,19 +62,15 @@ def nativeapp_bundle(
     """
     Prepares a local folder with configured app artifacts.
     """
-    try:
-        manager = NativeAppManager(project_path)
-        manager.build_bundle()
-        return OutputData.from_string(f"Bundle generated at {manager.deploy_root}")
-
-    except Exception as e:
-        return OutputData.from_string(str(e)).add_exit_code(1)
+    manager = NativeAppManager(project_path)
+    manager.build_bundle()
+    return OutputData.from_string(f"Bundle generated at {manager.deploy_root}")
 
 
-@app.command("diff")
+@app.command("diff", hidden=True)
 @with_output
 @global_options_with_connection
-def stage_list(
+def stage_diff(
     stage_fqn: str = typer.Argument(None, help="Name of stage"),
     folder_name: str = typer.Argument(None, help="Path to local folder"),
     **options,
@@ -82,8 +78,7 @@ def stage_list(
     """
     Diffs a stage with a local folder
     """
-
-    diff = stage_diff(Path(folder_name), stage_fqn)
+    diff: DiffResult = stage_diff(Path(folder_name), stage_fqn)
     output = f"""\
         only local:  {', '.join(diff.only_local)}
         only stage:  {', '.join(diff.only_on_stage)}
