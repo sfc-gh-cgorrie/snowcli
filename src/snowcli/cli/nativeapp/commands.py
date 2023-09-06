@@ -7,6 +7,7 @@ from snowcli.cli.common.flags import DEFAULT_CONTEXT_SETTINGS
 from snowcli.output.decorators import with_output, catch_error
 from snowcli.output.printing import OutputData
 
+from .init import nativeapp_init
 from .manager import NativeAppManager
 from .artifacts import ArtifactError
 
@@ -42,7 +43,7 @@ def nativeapp_init(
     Initialize a Native Apps project, optionally with a --template.
     """
 
-    NativeAppManager().nativeapp_init(name, template)
+    nativeapp_init(name, template)
     return OutputData.from_string(
         f"Native Apps project {name} has been created in your local directory."
     )
