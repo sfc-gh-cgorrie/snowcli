@@ -395,5 +395,5 @@ def test_get_client_git_version_happy_path(mock_subprocess, argument, expected):
 )
 def test_get_client_git_version_unhappy_path(mock_subprocess, argument):
     mock_subprocess.return_value = argument
-    with pytest.raises(CalledProcessError):
+    with pytest.raises(typer.Abort):
         utils.get_client_git_version()
