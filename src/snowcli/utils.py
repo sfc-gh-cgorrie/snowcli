@@ -10,6 +10,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import warnings
 from typing import Dict, List, Literal, Optional
 from pathlib import Path
@@ -582,3 +583,28 @@ def create_project_template(template_name: str):
         f"{os.getcwd()}",
         dirs_exist_ok=True,
     )
+
+
+def get_client_git_version():
+    """
+    Returns the major and minor version of git installed on a user's machine.
+    Args:
+        None
+
+    Returns:
+        str: the major and minor version of git, e.g. "2.25"
+    """
+    try:
+        output = subprocess.check_output(["git", "--version"], text=True)
+        pattern = r"git version (\d+\.\d+)"
+        match_found = re.search(pattern, output.strip())
+        if match_found:
+            git_version = match_found.group(1)
+            return git_version
+        else:
+            raise subprocess.CalledProcessError(
+                1, "Could not find a version for git. Please install git."
+            )
+    except subprocess.CalledProcessError as err:
+        log.error(err.stderr)
+        raise err

@@ -7,11 +7,10 @@ from requirements.requirement import Requirement
 import typer
 from unittest.mock import MagicMock, patch
 from zipfile import ZipFile
+from subprocess import CalledProcessError
 
 from snowcli import utils
-import tests.test_data.test_data
 from tests.testing_utils.fixtures import *
-
 
 SUBDIR = "subdir"
 
@@ -372,3 +371,29 @@ def test_deduplicate_and_sort_reqs():
     assert sorted_packages[0].name == "a"
     assert sorted_packages[0].specifier is True
     assert sorted_packages[0].specs == [("==", "0.9.5")]
+
+
+@mock.patch("subprocess.check_output")
+@pytest.mark.parametrize(
+    "argument, expected",
+    [
+        ("git version 2.39.2 (Apple Git-143)", "2.39"),
+        ("git version 2.39.2", "2.39"),
+        ("git version 2.39", "2.39"),
+    ],
+)
+def test_get_client_git_version_happy_path(mock_subprocess, argument, expected):
+    mock_subprocess.return_value = argument
+    actual = utils.get_client_git_version()
+    assert expected == actual
+
+
+@mock.patch("subprocess.check_output")
+@pytest.mark.parametrize(
+    "argument",
+    ["some random string"],
+)
+def test_get_client_git_version_unhappy_path(mock_subprocess, argument):
+    mock_subprocess.return_value = argument
+    with pytest.raises(CalledProcessError):
+        utils.get_client_git_version()
