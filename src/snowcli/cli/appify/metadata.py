@@ -22,6 +22,7 @@ from snowcli.cli.appify.util import find_row, extract_stages, split_fqn_id
 log = logging.getLogger(__name__)
 
 CATALOG_FILE_NAME = "catalog.json"
+ORDERING_FILE_NAME = "ordering.json"
 
 DOMAIN_TO_SHOW_COMMAND_NOUN = {
     "function": "user functions",
@@ -105,6 +106,10 @@ class MetadataDumper(SqlExecutionMixin):
     def catalog_path(self) -> Path:
         return self.metadata_path / CATALOG_FILE_NAME
 
+    @cached_property
+    def ordering_path(self) -> Path:
+        return self.metadata_path / ORDERING_FILE_NAME
+
     def get_stage_path(self, stage_id: str) -> Path:
         (db, schema, stage_name) = split_fqn_id(stage_id)
         return self.stages_path / db / schema / stage_name
@@ -163,6 +168,7 @@ class MetadataDumper(SqlExecutionMixin):
 
         self.dump_references()
         ordered_objects = self.get_ordering()
+        self.dump_object_ordering(ordered_objects)
 
     def process_schema(self, schema: str) -> None:
         """
@@ -201,7 +207,7 @@ class MetadataDumper(SqlExecutionMixin):
                     f"select get_ddl('{domain}', {literal})"
                 )
                 ddl = ddl_cursor.fetchone()[0]
-                filename = f"{object['name']}.sql"
+                filename = f"{object_name}.sql"
                 with open(schema_path / filename, "w") as f:
                     f.write(ddl)
                 self.update_references(schema_path, schema, object_name, domain)
@@ -210,6 +216,11 @@ class MetadataDumper(SqlExecutionMixin):
         # dump references
         with open(self.catalog_path, "w") as ref_file:
             json.dump(self.references, ref_file)
+
+    def dump_object_ordering(self, ordering: List[str]):
+        # dump references
+        with open(self.ordering_path, "w") as ref_file:
+            json.dump(ordering, ref_file)
 
     def dump_stage(self, stage_id: str) -> None:
         """
