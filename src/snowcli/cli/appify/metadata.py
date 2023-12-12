@@ -21,9 +21,7 @@ from snowcli.cli.appify.util import find_row, extract_stages, split_fqn_id
 
 log = logging.getLogger(__name__)
 
-REFERENCES_BY_NAME_JSON = "references_by_name.json"
-REFERENCES_DOMAINS = ["function", "table", "view"]
-REFERENCES_FILE_NAME = "references.json"
+CATALOG_FILE_NAME = "catalog.json"
 
 DOMAIN_TO_SHOW_COMMAND_NOUN = {
     "function": "user functions",
@@ -103,6 +101,10 @@ class MetadataDumper(SqlExecutionMixin):
     def stages_path(self) -> Path:
         return self.project_path / "stages"
 
+    @cached_property
+    def catalog_path(self) -> Path:
+        return self.metadata_path / CATALOG_FILE_NAME
+
     def get_stage_path(self, stage_id: str) -> Path:
         (db, schema, stage_name) = split_fqn_id(stage_id)
         return self.stages_path / db / schema / stage_name
@@ -158,8 +160,8 @@ class MetadataDumper(SqlExecutionMixin):
         # functions, procedures, and streamlits appropriately.
         for stage_id in self.referenced_stage_ids:
             self.dump_stage(stage_id)
-        
-        self.dump_references(self.metadata_path)
+
+        self.dump_references()
         ordered_objects = self.get_ordering()
 
     def process_schema(self, schema: str) -> None:
@@ -204,9 +206,9 @@ class MetadataDumper(SqlExecutionMixin):
                     f.write(ddl)
                 self.update_references(schema_path, schema, object_name, domain)
 
-    def dump_references(self, path: str): 
+    def dump_references(self):
         # dump references
-        with open(path / REFERENCES_FILE_NAME, "w") as ref_file:
+        with open(self.catalog_path, "w") as ref_file:
             json.dump(self.references, ref_file)
 
     def dump_stage(self, stage_id: str) -> None:
@@ -220,7 +222,9 @@ class MetadataDumper(SqlExecutionMixin):
     def update_references(
         self, schema_path: str, schema: str, object_name: str, domain: str
     ) -> None:
-        log.info(f"grabbing references for object {schema}.{object_name} with domain {domain}")
+        log.info(
+            f"grabbing references for object {schema}.{object_name} with domain {domain}"
+        )
         literal = self._object_literal(schema, object_name)
         references_cursor = self._execute_query(
             f"select system$GET_REFERENCES_BY_NAME_AS_OF_TIME({literal}, '{domain}')"
@@ -228,18 +232,18 @@ class MetadataDumper(SqlExecutionMixin):
         references_list = json.loads(references_cursor.fetchone()[0])
         cleaned_up_ref_list = []
         clean_ref_names = []
-        for reference in references_list: 
+        for reference in references_list:
             name = reference[0]
             domain = reference[1]
-            if domain.upper() in ["FUNCTION"]:     
-                cleaned_up_name = re.sub(r'^(.*\))(.*)$', r'\1', name) + "\""
+            if domain.upper() in ["FUNCTION"]:
+                cleaned_up_name = re.sub(r"^(.*\))(.*)$", r"\1", name) + '"'
                 cleaned_up_ref_list.append([cleaned_up_name, domain])
                 clean_ref_names.append(cleaned_up_name)
             else:
                 cleaned_up_ref_list.append(reference)
                 clean_ref_names.append(name)
         fqn = self.get_object_fully_qualified_name(schema, object_name)
-        self.references[self.get_object_fully_qualified_name(schema, object_name)] = { 
+        self.references[self.get_object_fully_qualified_name(schema, object_name)] = {
             "references": cleaned_up_ref_list,
             "kind": domain,
             "object_name": object_name,
@@ -251,11 +255,5 @@ class MetadataDumper(SqlExecutionMixin):
     def get_ordering(self) -> List[str]:
         log.info(f"ordering graph {self.ordering_graph}")
         ts = graphlib.TopologicalSorter(self.ordering_graph)
-        ordered_objects  = list(ts.static_order())
+        ordered_objects = list(ts.static_order())
         return ordered_objects
-        
-
-
-
-
-        

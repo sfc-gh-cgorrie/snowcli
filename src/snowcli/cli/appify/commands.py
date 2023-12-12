@@ -10,6 +10,7 @@ from snowcli.output.types import CommandResult, MessageResult
 
 from snowcli.cli.appify.metadata import MetadataDumper
 from snowcli.cli.appify.generate import (
+    load_catalog,
     modifications,
     generate_setup_statements,
     rewrite_stage_imports,
@@ -51,7 +52,7 @@ def appify(
     dumper = MetadataDumper(db, project.path)
     dumper.execute()
 
-    catalog = {}  # load_catalog(dumper.catalog_path)
+    catalog = load_catalog(dumper.catalog_path)
     rewrite_stage_imports(catalog, dumper.referenced_stage_ids, dumper.metadata_path)
 
     # generate the setup script

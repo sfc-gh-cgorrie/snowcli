@@ -2,8 +2,9 @@ import re
 from click import ClickException
 from typing import Callable, Optional, List, Tuple
 from snowflake.connector.cursor import DictCursor
-from snowcli.cli.project.util import DB_SCHEMA_AND_NAME, SCHEMA_AND_NAME
+from snowcli.cli.project.util import DB_SCHEMA_AND_NAME, IDENTIFIER
 
+DB_SCHEMA_NAME_ARGS = f"{DB_SCHEMA_AND_NAME}([(].+[)])?"
 STAGE_IMPORT_REGEX = f"@({DB_SCHEMA_AND_NAME})/"
 
 
@@ -34,17 +35,10 @@ def split_fqn_id(id: str) -> Tuple[str, str, str]:
     """
     Splits a fully-qualified identifier into its consituent parts.
     Returns (database, schema, name); quoting carries over from the input.
+    Name can have arguments in it, e.g. for callable objects.
     """
-    if match := re.fullmatch(DB_SCHEMA_AND_NAME, id):
-        return (match.group(1), match.group(2), match.group(3))
-    raise NotAQualifiedNameError(id)
-
-
-def split_schema_and_object_id(id: str) -> Tuple[str, str, str]:
-    """
-    Splits a partially-qualified identifier into its consituent parts.
-    Returns (schema, name); quoting carries over from the input.
-    """
-    if match := re.fullmatch(DB_SCHEMA_AND_NAME, id):
-        return (match.group(1), match.group(2))
+    if match := re.fullmatch(DB_SCHEMA_NAME_ARGS, id):
+        args = match.group(4)
+        name = match.group(3) if args is None else f"{match.group(3)}{args}"
+        return (match.group(1), match.group(2), name)
     raise NotAQualifiedNameError(id)
