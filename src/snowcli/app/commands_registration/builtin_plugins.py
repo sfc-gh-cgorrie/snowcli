@@ -1,6 +1,7 @@
 from snowcli.cli.connection import plugin_spec as connection_plugin_spec
 from snowcli.cli.containers import plugin_spec as containers_plugin_spec
 from snowcli.cli.nativeapp import plugin_spec as nativeapp_plugin_spec
+from snowcli.cli.appify import plugin_spec as appify_plugin_spec
 from snowcli.cli.object import plugin_spec as object_plugin_spec
 from snowcli.cli.registry import plugin_spec as registry_plugins_spec
 from snowcli.cli.render import plugin_spec as render_plugin_spec
@@ -13,6 +14,7 @@ builtin_plugin_name_to_plugin_spec = {
     "connection": connection_plugin_spec,
     "containers": containers_plugin_spec,
     "nativeapp": nativeapp_plugin_spec,
+    "appify": appify_plugin_spec,
     "object": object_plugin_spec,
     "registry": registry_plugins_spec,
     "render": render_plugin_spec,
