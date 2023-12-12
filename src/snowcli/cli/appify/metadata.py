@@ -112,6 +112,9 @@ class MetadataDumper(SqlExecutionMixin):
     def _object_literal(self, schema: str, object: str) -> str:
         return to_string_literal(f"{self.database}.{schema}.{object}")
 
+    def get_object_fully_qualified_name(self, schema: str, object_name: str) -> str:
+        return f"{self.database}.{schema}.{object_name}"
+
     def _is_procedure_callers_rights(self, identifier: str) -> str:
         cursor = self._execute_query(
             f"describe procedure {identifier}", cursor_class=DictCursor
@@ -218,7 +221,7 @@ class MetadataDumper(SqlExecutionMixin):
             f"select system$GET_REFERENCES_BY_NAME_AS_OF_TIME({literal}, '{domain}')"
         )
         references_list = json.loads(references_cursor.fetchone()[0])
-        self.references[literal] = { 
+        self.references[self.get_object_fully_qualified_name(schema, object_name)] = { 
             "references": references_list,
             "kind": domain,
             "object_name": object_name,
