@@ -84,7 +84,8 @@ class MetadataDumper(SqlExecutionMixin):
     def __init__(self, database: str, project_path: Path):
         super().__init__()
         self.stage_manager = StageManager()
-        self.database = database
+        # FIXME: deal with quoted identifiers
+        self.database = database.upper()
         self.project_path = project_path
         self.schemas = []
         self.referenced_stage_ids = []
@@ -192,8 +193,8 @@ class MetadataDumper(SqlExecutionMixin):
                 with open(schema_path / filename, "w") as f:
                     f.write(ddl)
                 self.update_references(schema_path, literal, domain)
-                
-        #dump references
+
+        # dump references
         with open(schema_path / REFERENCES_FILE_NAME, "w") as ref_file:
             json.dump(self.references, ref_file)
 
@@ -205,11 +206,12 @@ class MetadataDumper(SqlExecutionMixin):
         stage_folder.mkdir(parents=True)
         self.stage_manager.get(stage_id, stage_folder)
 
-    def update_references(self, schema_path: str, object_name: str, domain: str) -> None:
+    def update_references(
+        self, schema_path: str, object_name: str, domain: str
+    ) -> None:
         log.info(f"grabbing references for object {object_name} with domain {domain}")
         references_cursor = self._execute_query(
-                    f"select system$GET_REFERENCES_BY_NAME_AS_OF_TIME({object_name}, '{domain}')"
-                )
+            f"select system$GET_REFERENCES_BY_NAME_AS_OF_TIME({object_name}, '{domain}')"
+        )
         references_list = json.loads(references_cursor.fetchone()[0])
-        self.references[object_name] = references_list;
-    
+        self.references[object_name] = references_list
