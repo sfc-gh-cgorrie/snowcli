@@ -1,0 +1,6 @@
+create or replace TABLE USERS_2 (
+	ID NUMBER(38,0) autoincrement start 1 increment 1 order,
+	NAME VARCHAR(100) NOT NULL,
+	DESCRIPTION VARCHAR(100) NOT NULL,
+	ACTIVE BOOLEAN DEFAULT TRUE
+);

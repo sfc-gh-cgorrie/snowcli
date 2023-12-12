@@ -5,6 +5,7 @@ import logging
 from functools import cached_property
 from pathlib import Path
 from typing import Callable, Tuple, List, Union
+import json
 
 from click.exceptions import ClickException
 from snowflake.connector.cursor import DictCursor
@@ -22,6 +23,7 @@ log = logging.getLogger(__name__)
 
 REFERENCES_BY_NAME_JSON = "references_by_name.json"
 REFERENCES_DOMAINS = ["function", "table", "view"]
+REFERENCES_FILE_NAME = "references.json"
 
 DOMAIN_TO_SHOW_COMMAND_NOUN = {
     "function": "user functions",
@@ -94,6 +96,7 @@ class MetadataDumper(SqlExecutionMixin):
     project_path: Path
     schemas: List[dict]
     referenced_stage_ids: List[str]
+    references: Dict
 
     def __init__(self, database: str, project_path: Path):
         super().__init__()
@@ -102,6 +105,7 @@ class MetadataDumper(SqlExecutionMixin):
         self.project_path = project_path
         self.schemas = []
         self.referenced_stage_ids = []
+        self.references = {}
 
     @cached_property
     def metadata_path(self) -> Path:
@@ -204,6 +208,11 @@ class MetadataDumper(SqlExecutionMixin):
                 filename = f"{object['name']}.sql"
                 with open(schema_path / filename, "w") as f:
                     f.write(ddl)
+                self.update_references(schema_path, literal, domain)
+                
+        #dump references
+        with open(schema_path / REFERENCES_FILE_NAME, "w") as ref_file:
+            json.dump(self.references, ref_file)
 
     def dump_stage(self, stage_id: str) -> None:
         """
@@ -212,3 +221,12 @@ class MetadataDumper(SqlExecutionMixin):
         stage_folder = self.get_stage_path(stage_id)
         stage_folder.mkdir(parents=True)
         self.stage_manager.get(stage_id, stage_folder)
+
+    def update_references(self, schema_path: str, object_name: str, domain: str) -> None:
+        log.info(f"grabbing references for object {object_name} with domain {domain}")
+        references_cursor = self._execute_query(
+                    f"select system$GET_REFERENCES_BY_NAME_AS_OF_TIME({object_name}, '{domain}')"
+                )
+        references_list = json.loads(references_cursor.fetchone()[0])
+        self.references[object_name] = references_list;
+    

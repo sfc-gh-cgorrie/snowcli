@@ -1,0 +1,9 @@
+CREATE OR REPLACE FUNCTION "ADDONE"("I" NUMBER(38,0))
+RETURNS NUMBER(38,0)
+LANGUAGE PYTHON
+RUNTIME_VERSION = '3.8'
+HANDLER = 'addone_py'
+AS '
+def addone_py(i):
+  return i+1
+';
