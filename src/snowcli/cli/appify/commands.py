@@ -48,10 +48,9 @@ def appify(
 
     # catalog = load_catalog(dumper.catalog_path)
     # TODO: post-process: re-write stage references in-place
-    # TODO: setup_statements = list(generate_setup_statements(catalog))
+    # setup_statements = list(generate_setup_statements(catalog))
     # with open(project.path / "app" / "setup.sql") as setup_sql:
-    #     setup_sql.write(";\n".join(setup_statements))
-    #     setup_sql.write(";")
+    #     setup_sql.write("\n".join(setup_statements))
 
     # include referenced stages + metadata in our app stage
     with modifications(project.path / "snowflake.yml") as snowflake_yml:

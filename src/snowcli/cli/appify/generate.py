@@ -66,20 +66,20 @@ def generate_setup_statements(
     """
     Generator that yields all the statements necessary to build the setup script.
     """
-    yield f"create application role if not exists {APP_PUBLIC}"
+    yield f"create application role if not exists {APP_PUBLIC};"
 
     all_object_ids = list(catalog.keys())
     schemas = list(set([split_schema_and_object_id(x)[0] for x in all_object_ids]))
 
     for schema in schemas:
-        yield f"create or alter versioned schema {to_identifier(schema)}"
-        yield f"grant usage on schema {to_identifier(schema)} to application role {APP_PUBLIC}"
+        yield f"create or alter versioned schema {to_identifier(schema)};"
+        yield f"grant usage on schema {to_identifier(schema)} to application role {APP_PUBLIC};"
 
     for schema, object_name in get_ordering(catalog):
         kind = get_kind(catalog, schema, object_name)
-        yield f"use schema {to_identifier(schema)}"
+        yield f"use schema {to_identifier(schema)};"
         # XXX: is this correct quoting?
-        yield f"execute immediate from './metadata/{schema}/{object_name}.sql'"
+        yield f"execute immediate from './metadata/{schema}/{object_name}.sql';"
         if kind in GRANT_BY_KIND:
             # FIXME: need to refactor to split name + arguments so we can quote only the name
-            yield f"grant {GRANT_BY_KIND[kind]} {to_identifier(schema)}.{object_name}"
+            yield f"grant {GRANT_BY_KIND[kind]} {to_identifier(schema)}.{object_name};"
