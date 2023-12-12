@@ -2,18 +2,16 @@ import logging
 from typing import Optional
 
 import typer
-from snowcli.cli.common.decorators import (
-    global_options,
-    global_options_with_connection,
-)
+from snowcli.cli.common.decorators import global_options_with_connection
 from snowcli.cli.common.flags import DEFAULT_CONTEXT_SETTINGS
 from snowcli.cli.nativeapp.init import nativeapp_init
 from snowcli.output.decorators import with_output
 from snowcli.output.types import CommandResult, MessageResult
 
 from snowcli.cli.appify.metadata import MetadataDumper
+from snowcli.cli.appify.generate import modify_yml
 
-# from snowcli.cli.appify.generate import ...
+from strictyaml import as_document
 
 app = typer.Typer(
     context_settings=DEFAULT_CONTEXT_SETTINGS,
@@ -48,7 +46,14 @@ def appify(
     dumper = MetadataDumper(db, project.path)
     dumper.execute()
 
-    # for stage in dumper.stages:
-    #     pass
+    with modify_yml(project.path / "snowflake.yml") as snowflake_yml:
+        native_app = snowflake_yml["native_app"]
+
+        # include referenced stages in our app stage
+        artifacts = native_app["artifacts"].data
+        for stage_id in dumper.referenced_stage_ids:
+            stage_path = dumper.get_stage_path(stage_id).relative_to(project.path)
+            artifacts.append(str(stage_path))
+        native_app["artifacts"] = as_document(artifacts)
 
     return MessageResult(f"Created Native Application project from {db}.")

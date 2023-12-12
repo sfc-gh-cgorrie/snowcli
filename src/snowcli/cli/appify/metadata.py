@@ -131,8 +131,8 @@ class MetadataDumper(SqlExecutionMixin):
 
     def _get_callable_stage_ids(self, domain: str, identifier: str) -> List[str]:
         """
-        Returns the stage IDs that are imported by this procedure,
-        or the empty list if the procedure is not backed by code in a stage.
+        Returns the stage IDs that are imported by this callable (procedure / function),
+        or the empty list if the callable is not backed by code in a stage.
         """
         cursor = self._execute_query(
             f"describe {domain} {identifier}", cursor_class=DictCursor
