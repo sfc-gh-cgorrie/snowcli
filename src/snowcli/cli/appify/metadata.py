@@ -103,13 +103,17 @@ class MetadataDumper(SqlExecutionMixin):
         self.schemas = []
         self.referenced_stage_ids = []
 
-    def get_stage_path(self, stage_id: str) -> Path:
-        (db, schema, stage_name) = split_fqn_id(stage_id)
-        return self.project_path / "stages" / db / schema / stage_name
-
     @cached_property
     def metadata_path(self) -> Path:
         return self.project_path / "metadata"
+
+    @cached_property
+    def stages_path(self) -> Path:
+        return self.project_path / "stages"
+
+    def get_stage_path(self, stage_id: str) -> Path:
+        (db, schema, stage_name) = split_fqn_id(stage_id)
+        return self.stages_path / db / schema / stage_name
 
     def _schema_id(self, schema: str) -> str:
         return f"{to_identifier(self.database)}.{to_identifier(schema)}"

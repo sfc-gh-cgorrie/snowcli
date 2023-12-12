@@ -46,14 +46,11 @@ def appify(
     dumper = MetadataDumper(db, project.path)
     dumper.execute()
 
+    # include referenced stages + metadata in our app stage
     with modify_yml(project.path / "snowflake.yml") as snowflake_yml:
-        native_app = snowflake_yml["native_app"]
-
-        # include referenced stages in our app stage
-        artifacts = native_app["artifacts"].data
-        for stage_id in dumper.referenced_stage_ids:
-            stage_path = dumper.get_stage_path(stage_id).relative_to(project.path)
-            artifacts.append(str(stage_path))
-        native_app["artifacts"] = as_document(artifacts)
+        artifacts = snowflake_yml["native_app"]["artifacts"].data
+        artifacts.append(str(dumper.metadata_path))
+        artifacts.append(str(dumper.stages_path))
+        snowflake_yml["native_app"]["artifacts"] = as_document(artifacts)
 
     return MessageResult(f"Created Native Application project from {db}.")
