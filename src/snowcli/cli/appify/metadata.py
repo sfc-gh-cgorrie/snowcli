@@ -11,13 +11,11 @@ from click.exceptions import ClickException
 from snowflake.connector.cursor import DictCursor
 from snowcli.cli.common.sql_execution import SqlExecutionMixin
 from snowcli.cli.object.stage.manager import StageManager
-from snowcli.cli.object.stage.diff import strip_stage_name
 from snowcli.cli.project.util import (
     to_identifier,
     to_string_literal,
-    DB_SCHEMA_AND_NAME,
 )
-from snowcli.cli.appify.util import find_row, extract_stages
+from snowcli.cli.appify.util import find_row, extract_stages, split_fqn_id
 
 log = logging.getLogger(__name__)
 
@@ -56,21 +54,6 @@ class ObjectNotFoundError(ClickException):
 class UnexpectedArgumentsFormatError(ClickException):
     def __init__(self, arguments: str):
         super().__init__(f"Unexpected arguments literal: {arguments}")
-
-
-class NotAFullyQualifiedNameError(ClickException):
-    def __init__(self, identifier: str):
-        super().__init__(f"Not a fully-qualified name: {identifier}")
-
-
-def split_fqn_id(id: str) -> Tuple[str, str, str]:
-    """
-    Splits a fully-qualified identifier into its consituent parts.
-    Returns (database, schema, name); quoting carries over from the input.
-    """
-    if match := re.fullmatch(DB_SCHEMA_AND_NAME, id):
-        return (match.group(1), match.group(2), match.group(3))
-    raise NotAFullyQualifiedNameError(id)
 
 
 def name_from_object_row(object: dict) -> str:
