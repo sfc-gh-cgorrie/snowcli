@@ -3,9 +3,11 @@ from __future__ import annotations
 import re
 import logging
 from functools import cached_property
+import graphlib
 from pathlib import Path
 from typing import Callable, Tuple, List, Union
 import json
+import pprint
 
 from click.exceptions import ClickException
 from snowflake.connector.cursor import DictCursor
@@ -79,7 +81,8 @@ class MetadataDumper(SqlExecutionMixin):
     project_path: Path
     schemas: List[dict]
     referenced_stage_ids: List[str]
-    references: Dict
+    references: dict
+    ordering_graph: dict
 
     def __init__(self, database: str, project_path: Path):
         super().__init__()
@@ -90,6 +93,7 @@ class MetadataDumper(SqlExecutionMixin):
         self.schemas = []
         self.referenced_stage_ids = []
         self.references = {}
+        self.ordering_graph = {}
 
     @cached_property
     def metadata_path(self) -> Path:
@@ -156,6 +160,7 @@ class MetadataDumper(SqlExecutionMixin):
             self.dump_stage(stage_id)
         
         self.dump_references(self.metadata_path)
+        ordered_objects = self.get_ordering()
 
     def process_schema(self, schema: str) -> None:
         """
@@ -222,15 +227,18 @@ class MetadataDumper(SqlExecutionMixin):
         )
         references_list = json.loads(references_cursor.fetchone()[0])
         cleaned_up_ref_list = []
+        clean_ref_names = []
         for reference in references_list: 
             name = reference[0]
             domain = reference[1]
             if domain.upper() in ["FUNCTION"]:     
                 cleaned_up_name = re.sub(r'^(.*\))(.*)$', r'\1', name) + "\""
                 cleaned_up_ref_list.append([cleaned_up_name, domain])
+                clean_ref_names.append(cleaned_up_name)
             else:
                 cleaned_up_ref_list.append(reference)
-
+                clean_ref_names.append(name)
+        fqn = self.get_object_fully_qualified_name(schema, object_name)
         self.references[self.get_object_fully_qualified_name(schema, object_name)] = { 
             "references": cleaned_up_ref_list,
             "kind": domain,
@@ -238,9 +246,15 @@ class MetadataDumper(SqlExecutionMixin):
             "schema": schema,
             "database": self.database,
         }
+        self.ordering_graph[fqn] = set(clean_ref_names)
 
-    def get_ordering_from_references() -> List[dict]:
-        references = self.references 
+    def get_ordering(self) -> List[str]:
+        log.info(f"ordering graph {self.ordering_graph}")
+        ts = graphlib.TopologicalSorter(self.ordering_graph)
+        ordered_objects  = list(ts.static_order())
+        return ordered_objects
+        
+
 
 
 
