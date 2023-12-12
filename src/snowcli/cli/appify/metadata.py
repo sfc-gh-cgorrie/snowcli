@@ -11,6 +11,7 @@ from snowflake.connector.cursor import DictCursor
 from snowcli.cli.common.sql_execution import SqlExecutionMixin
 from snowcli.cli.object.stage.manager import StageManager
 from snowcli.cli.project.util import to_identifier, to_string_literal
+from snowcli.cli.appify.util import find_row
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +39,11 @@ WHITELISTED_DOMAINS = [
 BLACKLISTED_SCHEMAS = ["INFORMATION_SCHEMA"]
 
 ARGUMENTS_REGEX = "(.+) RETURN.+"
+
+
+class ObjectNotFoundError(ClickException):
+    def __init__(self, identifier: str):
+        super().__init__(f"Object did not exist or no rights: {identifier}")
 
 
 class UnexpectedArgumentsFormatError(ClickException):
@@ -81,6 +87,15 @@ class MetadataDumper(SqlExecutionMixin):
     def _object_literal(self, schema: str, object: str) -> str:
         return to_string_literal(f"{self.database}.{schema}.{object}")
 
+    def _is_callable_callers_rights(self, domain: str, identifier: str) -> str:
+        cursor = self._execute_query(
+            f"describe {domain} {identifier}", cursor_class=DictCursor
+        )
+        execute_as = find_row(cursor, lambda r: r["property"] == "execute as")
+        if not execute_as:
+            raise ObjectNotFoundError(identifier)
+        return execute_as["value"] == "CALLER"
+
     def execute(self) -> None:
         """
         Connects to the target database and dumps metadata into the target path.
@@ -108,6 +123,16 @@ class MetadataDumper(SqlExecutionMixin):
             )
             for object in objects.fetchall():
                 object_name = name_from_object_row(object)
+                # FIXME: need to refactor to split name + arguments so we can quote only the name
+                object_identifier = f"{self._schema_id(schema)}.{object_name}"
+
+                # callers' rights procedures cannot become part of a Native Application
+                if domain == "procedure" and self._is_callable_callers_rights(
+                    domain, object_identifier
+                ):
+                    log.info(f"Skipping callers' rights procedure {object_identifier}")
+                    pass
+
                 literal = self._object_literal(schema, object_name)
                 ddl_cursor = self._execute_query(
                     f"select get_ddl('{domain}', {literal})"
