@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import logging
 from functools import cached_property
 from pathlib import Path
@@ -14,9 +15,44 @@ from snowcli.cli.project.util import to_identifier, to_string_literal
 log = logging.getLogger(__name__)
 
 REFERENCES_BY_NAME_JSON = "references_by_name.json"
-REFERENCES_OBJECT_TYPES = ["function", "table", "view"]
+REFERENCES_DOMAINS = ["function", "table", "view"]
+
+DOMAIN_TO_SHOW_COMMAND_NOUN = {
+    "function": "user functions",
+    "table": "tables",
+    "view": "views",
+    "procedure": "user procedures",
+    "stage": "stages",
+    "streamlit": "streamlits",
+}
+
+WHITELISTED_DOMAINS = [
+    "table",
+    "view",
+    "function",
+    "procedure",
+    "stage",
+    "streamlit",
+]
 
 BLACKLISTED_SCHEMAS = ["INFORMATION_SCHEMA"]
+
+ARGUMENTS_REGEX = "(.+) RETURN.+"
+
+
+class UnexpectedArgumentsFormatError(ClickException):
+    def __init__(self, arguments: str):
+        super().__init__(f"Unexpected arguments literal: {arguments}")
+
+
+def name_from_object_row(object: dict) -> str:
+    if "arguments" not in object:
+        return object["name"]
+
+    if match := re.fullmatch(ARGUMENTS_REGEX, object["arguments"]):
+        return match.group(1)
+
+    raise UnexpectedArgumentsFormatError(object["arguments"])
 
 
 class MetadataDumper(SqlExecutionMixin):
@@ -65,15 +101,18 @@ class MetadataDumper(SqlExecutionMixin):
         schema_path = self.target_path / schema
         schema_path.mkdir(parents=True, exist_ok=True)
 
-        objects = self._execute_query(
-            f"show objects in schema {self._schema_id(schema)}",
-            cursor_class=DictCursor,
-        )
-        for object in objects.fetchall():
-            literal = self._object_literal(schema, object["name"])
-            kind = object["kind"]
-            ddl_cursor = self._execute_query(f"select get_ddl('{kind}', {literal})")
-            ddl = ddl_cursor.fetchone()[0]
-            filename = f"{object['name']}.sql"
-            with open(schema_path / filename, "w") as f:
-                f.write(ddl)
+        for domain in WHITELISTED_DOMAINS:
+            objects = self._execute_query(
+                f"show {DOMAIN_TO_SHOW_COMMAND_NOUN[domain]} in schema {self._schema_id(schema)}",
+                cursor_class=DictCursor,
+            )
+            for object in objects.fetchall():
+                object_name = name_from_object_row(object)
+                literal = self._object_literal(schema, object_name)
+                ddl_cursor = self._execute_query(
+                    f"select get_ddl('{domain}', {literal})"
+                )
+                ddl = ddl_cursor.fetchone()[0]
+                filename = f"{object['name']}.sql"
+                with open(schema_path / filename, "w") as f:
+                    f.write(ddl)
