@@ -2,14 +2,14 @@ import re
 from click import ClickException
 from typing import Callable, Optional, List, Tuple
 from snowflake.connector.cursor import DictCursor
-from snowcli.cli.project.util import DB_SCHEMA_AND_NAME
+from snowcli.cli.project.util import DB_SCHEMA_AND_NAME, SCHEMA_AND_NAME
 
 STAGE_IMPORT_REGEX = f"@({DB_SCHEMA_AND_NAME})/"
 
 
-class NotAFullyQualifiedNameError(ClickException):
+class NotAQualifiedNameError(ClickException):
     def __init__(self, identifier: str):
-        super().__init__(f"Not a fully-qualified name: {identifier}")
+        super().__init__(f"Not an appropriately-qualified name: {identifier}")
 
 
 def find_row(cursor: DictCursor, predicate: Callable[[dict], bool]) -> Optional[dict]:
@@ -37,4 +37,14 @@ def split_fqn_id(id: str) -> Tuple[str, str, str]:
     """
     if match := re.fullmatch(DB_SCHEMA_AND_NAME, id):
         return (match.group(1), match.group(2), match.group(3))
-    raise NotAFullyQualifiedNameError(id)
+    raise NotAQualifiedNameError(id)
+
+
+def split_schema_and_object_id(id: str) -> Tuple[str, str, str]:
+    """
+    Splits a partially-qualified identifier into its consituent parts.
+    Returns (schema, name); quoting carries over from the input.
+    """
+    if match := re.fullmatch(DB_SCHEMA_AND_NAME, id):
+        return (match.group(1), match.group(2))
+    raise NotAQualifiedNameError(id)
