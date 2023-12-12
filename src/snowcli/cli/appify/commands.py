@@ -44,9 +44,8 @@ def appify(
     Initializes a Native Apps project from a database.
     """
     project = nativeapp_init(path=db, name=name)
-    metadata_path = project.path / "metadata"
 
-    dumper = MetadataDumper(db, metadata_path)
+    dumper = MetadataDumper(db, project.path)
     dumper.execute()
 
     # for stage in dumper.stages:
