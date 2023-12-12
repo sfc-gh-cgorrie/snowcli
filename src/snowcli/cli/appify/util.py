@@ -4,7 +4,7 @@ from typing import Callable, Optional, List, Tuple
 from snowflake.connector.cursor import DictCursor
 from snowcli.cli.project.util import DB_SCHEMA_AND_NAME, IDENTIFIER
 
-DB_SCHEMA_NAME_ARGS = f"{DB_SCHEMA_AND_NAME}([(].+[)])?"
+DB_SCHEMA_NAME_ARGS = f"{DB_SCHEMA_AND_NAME}([(].*[)])?"
 STAGE_IMPORT_REGEX = f"@({DB_SCHEMA_AND_NAME})/"
 
 

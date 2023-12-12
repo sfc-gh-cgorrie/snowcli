@@ -1,7 +1,6 @@
 from typing import Generator, List, Tuple
 
 import re
-import json
 from textwrap import dedent
 from contextlib import contextmanager
 from pathlib import Path
@@ -48,24 +47,6 @@ def modifications(path: Path) -> Generator[YAML, None, None]:
         f.write(yml.as_yaml())
 
 
-def get_ordering(catalog: dict) -> List[Tuple[str, str]]:
-    """
-    Return a list of (schema, object name) tuples that represent a
-    depth-first search of the DAG that represents their dependencies.
-    Object names must include arguments for callable types.
-    """
-    return []
-
-
-def load_catalog(catalog_json: Path) -> dict:
-    """
-    Returns the metadata catalog for the database, containing reference
-    and kind information of the objects we dumped metadata for.
-    """
-    with open(catalog_json, "r") as f:
-        return json.load(f)
-
-
 def rewrite_stage_imports(
     catalog: dict, stage_ids: List[str], metadata_path: Path
 ) -> None:
@@ -75,12 +56,12 @@ def rewrite_stage_imports(
     there are missing features in NA (e.g. query_warehouse) and bugs in its get_ddl impl.
     """
 
-    def _rewrite_imports(s: str) -> str:
+    def _rewrite_imports(s: str, suffix: str = "") -> str:
         # FIXME: likely quoting is wrong here.
         for stage_id in stage_ids:
             (stage_db, stage_schema, stage_name) = split_fqn_id(stage_id)
-            needle = f"@{stage_id}/"
-            replacement = f"/stages/{stage_db}/{stage_schema}/{stage_name}/"
+            needle = f"@{stage_id}{suffix}"
+            replacement = f"/stages/{stage_db}/{stage_schema}/{stage_name}{suffix}"
             s = s.replace(needle, replacement)
         return s
 
@@ -88,7 +69,7 @@ def rewrite_stage_imports(
         if object["kind"] in CALLABLE_KINDS:
             (_db, schema, object_name) = split_fqn_id(id)
             sql_path = metadata_path / schema / f"{object_name}.sql"
-            ddl_statement = _rewrite_imports(sql_path.read_text())
+            ddl_statement = _rewrite_imports(sql_path.read_text(), "/")
             sql_path.write_text(ddl_statement)
 
         elif object["kind"] == "streamlit":
@@ -96,28 +77,28 @@ def rewrite_stage_imports(
             sql_path = metadata_path / schema / f"{object_name}.sql"
             ddl_statement = sql_path.read_text()
 
-            if match := STREAMLIT_NAME.match(ddl_statement):
+            if match := STREAMLIT_NAME.search(ddl_statement):
                 name = match.group(1)
             else:
                 raise MalformedStreamlitError("name", sql_path)
 
-            if match := STREAMLIT_MAIN_FILE.match(ddl_statement):
-                main_file = match.group(1)
-            else:
-                raise MalformedStreamlitError("main_file", sql_path)
-
-            if match := STREAMLIT_ROOT_LOCATION.match(ddl_statement):
+            if match := STREAMLIT_ROOT_LOCATION.search(ddl_statement):
                 root_location = match.group(1)
             else:
                 raise MalformedStreamlitError("root_location", sql_path)
+
+            if match := STREAMLIT_MAIN_FILE.search(ddl_statement):
+                main_file = match.group(1)
+            else:
+                raise MalformedStreamlitError("main_file", sql_path)
 
             from_clause = _rewrite_imports(root_location)
             sql_path.write_text(
                 dedent(
                     f"""
-                        create or replace streamlit {name}
+                        create or replace streamlit {schema}.{name}
                         FROM '{from_clause}'
-                        MAIN_FILE='{main_file};
+                        MAIN_FILE='{main_file}';
                     """
                 )
             )
@@ -125,6 +106,7 @@ def rewrite_stage_imports(
 
 def generate_setup_statements(
     catalog: dict,
+    ordering: List[str],
 ) -> Generator[str, None, None]:
     """
     Generator that yields all the statements necessary to build the setup script.
@@ -132,16 +114,15 @@ def generate_setup_statements(
     yield f"create application role if not exists {APP_PUBLIC};"
 
     all_object_ids = list(catalog.keys())
-    schemas = list(set([split_fqn_id(x)[0] for x in all_object_ids]))
+    schemas = list(set([split_fqn_id(x)[1] for x in all_object_ids]))
 
     for schema in schemas:
         yield f"create or alter versioned schema {to_identifier(schema)};"
         yield f"grant usage on schema {to_identifier(schema)} to application role {APP_PUBLIC};"
 
-    for fqn in get_ordering(catalog):
+    for fqn in ordering:
         (_db, schema, object_name) = split_fqn_id(fqn)
         kind = catalog[fqn]["kind"]
-        yield f"use schema {to_identifier(schema)};"
         # XXX: is this correct quoting?
         yield f"execute immediate from './metadata/{schema}/{object_name}.sql';"
         if kind in GRANT_BY_KIND:

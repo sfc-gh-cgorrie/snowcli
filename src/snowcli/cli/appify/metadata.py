@@ -248,6 +248,7 @@ class MetadataDumper(SqlExecutionMixin):
             domain = reference[1]
             if domain.upper() in ["FUNCTION"]:
                 cleaned_up_name = re.sub(r"^(.*\))(.*)$", r"\1", name) + '"'
+                cleaned_up_name = cleaned_up_name.replace(r'"', "")
                 cleaned_up_ref_list.append([cleaned_up_name, domain])
                 clean_ref_names.append(cleaned_up_name)
             else:

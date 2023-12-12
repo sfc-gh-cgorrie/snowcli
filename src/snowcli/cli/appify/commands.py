@@ -1,6 +1,7 @@
 import logging
 from typing import Optional
 
+import json
 import typer
 from snowcli.cli.common.decorators import global_options_with_connection
 from snowcli.cli.common.flags import DEFAULT_CONTEXT_SETTINGS
@@ -10,7 +11,6 @@ from snowcli.output.types import CommandResult, MessageResult
 
 from snowcli.cli.appify.metadata import MetadataDumper
 from snowcli.cli.appify.generate import (
-    load_catalog,
     modifications,
     generate_setup_statements,
     rewrite_stage_imports,
@@ -52,11 +52,12 @@ def appify(
     dumper = MetadataDumper(db, project.path)
     dumper.execute()
 
-    catalog = load_catalog(dumper.catalog_path)
+    catalog = json.loads(dumper.catalog_path.read_text())
+    ordering = json.loads(dumper.ordering_path.read_text())
     rewrite_stage_imports(catalog, dumper.referenced_stage_ids, dumper.metadata_path)
 
     # generate the setup script
-    setup_statements = list(generate_setup_statements(catalog))
+    setup_statements = list(generate_setup_statements(catalog, ordering))
     with open(project.path / "app" / "setup_script.sql", "w") as setup_sql:
         setup_sql.write("\n".join(setup_statements))
         setup_sql.write("\n")
@@ -64,8 +65,18 @@ def appify(
     # include referenced stages + metadata in our app stage
     with modifications(project.path / "snowflake.yml") as snowflake_yml:
         artifacts = snowflake_yml["native_app"]["artifacts"].data
-        artifacts.append(str(dumper.metadata_path))
-        artifacts.append(str(dumper.stages_path))
+        artifacts.append(
+            dict(
+                src=str(dumper.metadata_path.relative_to(project.path)),
+                dest="./metadata",
+            )
+        )
+        artifacts.append(
+            dict(
+                src=str(dumper.stages_path.relative_to(project.path)),
+                dest="./stages",
+            )
+        )
         snowflake_yml["native_app"]["artifacts"] = as_document(artifacts)
 
     return MessageResult(f"Created Native Application project from {db}.")
