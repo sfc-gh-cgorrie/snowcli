@@ -9,7 +9,12 @@ from snowcli.output.decorators import with_output
 from snowcli.output.types import CommandResult, MessageResult
 
 from snowcli.cli.appify.metadata import MetadataDumper
-from snowcli.cli.appify.generate import modifications, generate_setup_statements
+from snowcli.cli.appify.generate import (
+    modifications,
+    generate_setup_statements,
+    rewrite_stage_imports,
+)
+from snowcli.cli.appify.util import split_fqn_id
 
 from strictyaml import as_document
 
@@ -46,11 +51,14 @@ def appify(
     dumper = MetadataDumper(db, project.path)
     dumper.execute()
 
-    # catalog = load_catalog(dumper.catalog_path)
-    # TODO: post-process: re-write stage references in-place
-    # setup_statements = list(generate_setup_statements(catalog))
-    # with open(project.path / "app" / "setup.sql") as setup_sql:
-    #     setup_sql.write("\n".join(setup_statements))
+    catalog = {}  # load_catalog(dumper.catalog_path)
+    rewrite_stage_imports(catalog, dumper.referenced_stage_ids, dumper.metadata_path)
+
+    # generate the setup script
+    setup_statements = list(generate_setup_statements(catalog))
+    with open(project.path / "app" / "setup_script.sql", "w") as setup_sql:
+        setup_sql.write("\n".join(setup_statements))
+        setup_sql.write("\n")
 
     # include referenced stages + metadata in our app stage
     with modifications(project.path / "snowflake.yml") as snowflake_yml:

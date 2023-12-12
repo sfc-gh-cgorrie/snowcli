@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from strictyaml import YAML, load
 
-from snowcli.cli.appify.util import split_schema_and_object_id
+from snowcli.cli.appify.util import split_fqn_id
 
 from snowcli.cli.project.util import to_identifier
 from snowcli.cli.project.schemas.project_definition import project_schema
@@ -60,6 +60,31 @@ def load_catalog(catalog_json: Path) -> dict:
         return json.load(f)
 
 
+def rewrite_stage_imports(
+    catalog: dict, stage_ids: List[str], metadata_path: Path
+) -> None:
+    """
+    Rewrite the "imports" part of callable DDL statements that reference stages we have
+    imported to be part of our application stage. Instead of referencing a different stage,
+    these will now reference a path inside our application stage.
+    """
+    for id, object in catalog.items():
+        if object["kind"] in CALLABLE_KINDS:
+            (_db, schema, object_name) = split_fqn_id(id)
+            sql_path = metadata_path / schema / f"{object_name}.sql"
+            ddl_statement = sql_path.read_text()
+
+            # FIXME: likely quoting is wrong here.
+            for stage_id in stage_ids:
+                (stage_db, stage_schema, stage_name) = split_fqn_id(stage_id)
+                needle = f"@{stage_id}/"
+                replacement = f"/stages/{stage_db}/{stage_schema}/{stage_name}/"
+                ddl_statement = ddl_statement.replace(needle, replacement)
+
+            ddl_statement = ddl_statement.replace()
+            sql_path.write_text(ddl_statement)
+
+
 def generate_setup_statements(
     catalog: dict,
 ) -> Generator[str, None, None]:
@@ -69,7 +94,7 @@ def generate_setup_statements(
     yield f"create application role if not exists {APP_PUBLIC};"
 
     all_object_ids = list(catalog.keys())
-    schemas = list(set([split_schema_and_object_id(x)[0] for x in all_object_ids]))
+    schemas = list(set([split_fqn_id(x)[0] for x in all_object_ids]))
 
     for schema in schemas:
         yield f"create or alter versioned schema {to_identifier(schema)};"
