@@ -151,6 +151,8 @@ class MetadataDumper(SqlExecutionMixin):
         # functions, procedures, and streamlits appropriately.
         for stage_id in self.referenced_stage_ids:
             self.dump_stage(stage_id)
+        
+        self.dump_references(self.metadata_path)
 
     def process_schema(self, schema: str) -> None:
         """
@@ -192,10 +194,11 @@ class MetadataDumper(SqlExecutionMixin):
                 filename = f"{object['name']}.sql"
                 with open(schema_path / filename, "w") as f:
                     f.write(ddl)
-                self.update_references(schema_path, literal, domain)
+                self.update_references(schema_path, schema, object_name, domain)
 
+    def dump_references(self, path: str): 
         # dump references
-        with open(schema_path / REFERENCES_FILE_NAME, "w") as ref_file:
+        with open(path / REFERENCES_FILE_NAME, "w") as ref_file:
             json.dump(self.references, ref_file)
 
     def dump_stage(self, stage_id: str) -> None:
@@ -207,11 +210,19 @@ class MetadataDumper(SqlExecutionMixin):
         self.stage_manager.get(stage_id, stage_folder)
 
     def update_references(
-        self, schema_path: str, object_name: str, domain: str
+        self, schema_path: str, schema: str, object_name: str, domain: str
     ) -> None:
-        log.info(f"grabbing references for object {object_name} with domain {domain}")
+        log.info(f"grabbing references for object {schema}.{object_name} with domain {domain}")
+        literal = self._object_literal(schema, object_name)
         references_cursor = self._execute_query(
-            f"select system$GET_REFERENCES_BY_NAME_AS_OF_TIME({object_name}, '{domain}')"
+            f"select system$GET_REFERENCES_BY_NAME_AS_OF_TIME({literal}, '{domain}')"
         )
         references_list = json.loads(references_cursor.fetchone()[0])
-        self.references[object_name] = references_list
+        self.references[literal] = { 
+            "references": references_list,
+            "kind": domain,
+            "object_name": object_name,
+            "schema": schema,
+            "database": self.database,
+        }
+        
