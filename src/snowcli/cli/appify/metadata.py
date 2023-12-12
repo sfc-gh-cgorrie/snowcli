@@ -221,11 +221,27 @@ class MetadataDumper(SqlExecutionMixin):
             f"select system$GET_REFERENCES_BY_NAME_AS_OF_TIME({literal}, '{domain}')"
         )
         references_list = json.loads(references_cursor.fetchone()[0])
+        cleaned_up_ref_list = []
+        for reference in references_list: 
+            name = reference[0]
+            domain = reference[1]
+            if domain.upper() in ["FUNCTION"]:     
+                cleaned_up_name = re.sub(r'^(.*\))(.*)$', r'\1', name) + "\""
+                cleaned_up_ref_list.append([cleaned_up_name, domain])
+            else:
+                cleaned_up_ref_list.append(reference)
+
         self.references[self.get_object_fully_qualified_name(schema, object_name)] = { 
-            "references": references_list,
+            "references": cleaned_up_ref_list,
             "kind": domain,
             "object_name": object_name,
             "schema": schema,
             "database": self.database,
         }
+
+    def get_ordering_from_references() -> List[dict]:
+        references = self.references 
+
+
+
         
