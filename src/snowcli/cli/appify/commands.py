@@ -12,10 +12,11 @@ from snowcli.output.types import CommandResult, MessageResult
 from snowcli.cli.appify.metadata import MetadataDumper
 from snowcli.cli.appify.generate import (
     modifications,
+    rewrite_ddl,
+    discover_external_tables,
     generate_setup_statements,
-    rewrite_stage_imports,
+    generate_package_statements,
 )
-from snowcli.cli.appify.util import split_fqn_id
 
 from strictyaml import as_document
 
@@ -54,7 +55,7 @@ def appify(
 
     catalog = json.loads(dumper.catalog_path.read_text())
     ordering = json.loads(dumper.ordering_path.read_text())
-    rewrite_stage_imports(catalog, dumper.referenced_stage_ids, dumper.metadata_path)
+    rewrite_ddl(catalog, dumper.referenced_stage_ids, dumper.metadata_path)
 
     # generate the setup script
     setup_statements = list(generate_setup_statements(catalog, ordering))
@@ -62,8 +63,17 @@ def appify(
         setup_sql.write("\n".join(setup_statements))
         setup_sql.write("\n")
 
-    # include referenced stages + metadata in our app stage
+    # generate the package script, if required
+    seen_external_tables = discover_external_tables(catalog)
+    if seen_external_tables:
+        package_statements = list(generate_package_statements(seen_external_tables))
+        with open(project.path / "package.sql", "w") as package_sql:
+            package_sql.write("\n".join(package_statements))
+            package_sql.write("\n")
+
+    # modify the project definition
     with modifications(project.path / "snowflake.yml") as snowflake_yml:
+        # include referenced stages + metadata in our app stage
         artifacts = snowflake_yml["native_app"]["artifacts"].data
         artifacts.append(
             dict(
@@ -78,5 +88,10 @@ def appify(
             )
         )
         snowflake_yml["native_app"]["artifacts"] = as_document(artifacts)
+
+        # add the package script, if we created one
+        if seen_external_tables:
+            # XXX: changing the template could cause us to lose other "package:" keys
+            snowflake_yml["native_app"]["package"] = {"scripts": ["package.sql"]}
 
     return MessageResult(f"Created Native Application project from {db}.")

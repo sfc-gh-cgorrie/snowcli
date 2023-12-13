@@ -2,7 +2,7 @@ import re
 from click import ClickException
 from typing import Callable, Optional, List, Tuple
 from snowflake.connector.cursor import DictCursor
-from snowcli.cli.project.util import DB_SCHEMA_AND_NAME, IDENTIFIER
+from snowcli.cli.project.util import DB_SCHEMA_AND_NAME, unquote_identifier
 
 DB_SCHEMA_NAME_ARGS = f"{DB_SCHEMA_AND_NAME}([(].*[)])?"
 STAGE_IMPORT_REGEX = f"@({DB_SCHEMA_AND_NAME})/"
@@ -42,3 +42,17 @@ def split_fqn_id(id: str) -> Tuple[str, str, str]:
         name = match.group(3) if args is None else f"{match.group(3)}{args}"
         return (match.group(1), match.group(2), name)
     raise NotAQualifiedNameError(id)
+
+
+def fqn_matches(a: str, b: str) -> bool:
+    """
+    Returns True iff a and b refer to the same fully-qualified name
+    after Snowflake quoting rules have been taken into consideration.
+    """
+    (a1, a2, a3) = split_fqn_id(a)
+    (b1, b2, b3) = split_fqn_id(b)
+    return (
+        unquote_identifier(a1) == unquote_identifier(b1)
+        and unquote_identifier(a2) == unquote_identifier(b2)
+        and unquote_identifier(a3) == unquote_identifier(b3)
+    )
