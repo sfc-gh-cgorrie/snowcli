@@ -33,8 +33,8 @@ GRANT_BY_LOWER_KIND = {
 }
 
 STREAMLIT_NAME = re.compile(r"^\s*create or replace streamlit (.+)$", re.MULTILINE)
-STREAMLIT_ROOT_LOCATION = re.compile(r"^\s*root_location='(.+)$", re.MULTILINE)
-STREAMLIT_MAIN_FILE = re.compile(r"^\s*main_file='(.+)'$", re.MULTILINE)
+STREAMLIT_ROOT_LOCATION = re.compile(r"^\s*root_location='(.+)[\s;]*$", re.MULTILINE)
+STREAMLIT_MAIN_FILE = re.compile(r"^\s*main_file='(.+)'[\s;]*$", re.MULTILINE)
 
 REF_PACKAGE_SCHEMA_NAME = "appify_pkg_schema"
 JINJA_PACKAGE_NAME = "{{ package_name }}"
