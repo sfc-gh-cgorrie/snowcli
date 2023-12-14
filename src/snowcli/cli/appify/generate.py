@@ -1,6 +1,7 @@
 from typing import Generator, List, Tuple
 
 import re
+import logging
 from textwrap import dedent
 from contextlib import contextmanager
 from pathlib import Path
@@ -16,6 +17,8 @@ from snowcli.cli.project.util import (
     DB_SCHEMA_AND_NAME,
 )
 from snowcli.cli.project.schemas.project_definition import project_schema
+
+log = logging.getLogger(__name__)
 
 APP_PUBLIC = "app_public"
 
@@ -156,13 +159,14 @@ def rewrite_ddl(catalog: dict, stage_ids: List[str], metadata_path: Path) -> Non
 
             # qualify the identifier with the schema it lives within in the app
             expr = re.compile(
-                f"^(create or replace [a-zA-Z_]+ {IDENTIFIER})\s*[(\n]", re.IGNORECASE
+                f"^(create or replace ([a-zA-Z_]+) {IDENTIFIER})\s*[(\n]", re.IGNORECASE
             )
             if match := expr.match(ddl_statement):
                 finalpos = len(match.group(1))
+                actual_kind = match.group(2)  # XXX: otherwise views become tables
                 # FIXME: likely quoting is wrong here.
                 ddl_statement = (
-                    f"create or replace {kind} {schema}.{bare_object_name}"
+                    f"create or replace {actual_kind} {schema}.{bare_object_name}"
                     + ddl_statement[finalpos:]
                 )
             else:
@@ -216,6 +220,11 @@ def generate_setup_statements(
 
     for fqn in ordering:
         (_db, schema, object_name) = split_fqn_id(fqn)
+
+        if fqn not in catalog:
+            log.debug(f"Setup script: skipping {fqn} (not in catalog)")
+            continue
+
         kind = catalog[fqn]["kind"]
         # XXX: is this correct quoting?
         yield f"execute immediate from './metadata/{schema}/{object_name}.sql';"
@@ -259,6 +268,11 @@ def generate_package_statements(
 ) -> Generator[str, None, None]:
     yield f"create schema if not exists {JINJA_PACKAGE_NAME}.{REF_PACKAGE_SCHEMA_NAME};"
     yield f"grant usage on schema {JINJA_PACKAGE_NAME}.{REF_PACKAGE_SCHEMA_NAME} to share in application package {JINJA_PACKAGE_NAME};"
+
+    # grant reference_usage to all unique databases our external tables live in
+    seen_external_dbs = set([split_fqn_id(fqn)[0] for fqn in seen_external_tables])
+    for db in seen_external_dbs:
+        yield f"grant reference_usage on database {db} to share in application package {JINJA_PACKAGE_NAME};"
 
     # generate a view with SELECT privileges for each external table referenced by a view
     for external_fqn in seen_external_tables:

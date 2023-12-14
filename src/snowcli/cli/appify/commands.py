@@ -81,12 +81,13 @@ def appify(
                 dest="./metadata",
             )
         )
-        artifacts.append(
-            dict(
-                src=str(dumper.stages_path.relative_to(project.path)),
-                dest="./stages",
+        if dumper.referenced_stage_ids:
+            artifacts.append(
+                dict(
+                    src=str(dumper.stages_path.relative_to(project.path)),
+                    dest="./stages",
+                )
             )
-        )
         snowflake_yml["native_app"]["artifacts"] = as_document(artifacts)
 
         # add the package script, if we created one

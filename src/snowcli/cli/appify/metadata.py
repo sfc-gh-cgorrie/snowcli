@@ -38,7 +38,6 @@ WHITELISTED_DOMAINS = [
     "view",
     "function",
     "procedure",
-    "stage",
     "streamlit",
 ]
 
