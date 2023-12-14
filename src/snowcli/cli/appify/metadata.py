@@ -40,6 +40,7 @@ WHITELISTED_DOMAINS = [
     "procedure",
     "streamlit",
 ]
+STAGE_BACKED_DOMAINS = ["streamlit", "procedure", "function"]
 
 BLACKLISTED_SCHEMAS = ["INFORMATION_SCHEMA"]
 
@@ -134,16 +135,26 @@ class MetadataDumper(SqlExecutionMixin):
             raise ObjectNotFoundError(identifier)
         return execute_as["value"] == "CALLER"
 
-    def _get_callable_stage_ids(self, domain: str, identifier: str) -> List[str]:
+    def _get_referenced_stage_ids(self, domain: str, identifier: str) -> List[str]:
         """
-        Returns the stage IDs that are imported by this callable (procedure / function),
+        Returns the stage IDs that are imported by this procedure, function, or streamlit,
         or the empty list if the callable is not backed by code in a stage.
         """
         cursor = self._execute_query(
             f"describe {domain} {identifier}", cursor_class=DictCursor
         )
-        imports = find_row(cursor, lambda r: r["property"] == "imports")
-        return [] if not imports else extract_stages(imports["value"])
+        if domain in ["procedure", "function"]:
+            imports = find_row(cursor, lambda r: r["property"] == "imports")
+            return [] if not imports else extract_stages(imports["value"])
+        else:
+            row = cursor.fetchone()
+            root_location: str = row["root_location"]
+            if not root_location.startswith("@"):
+                log.warning(
+                    f"Streamlit {identifier} did not have a stage (root_location={root_location}"
+                )
+                return []
+            return [root_location[1:]]  # strip the @ from stage name
 
     def execute(self) -> None:
         """
@@ -194,8 +205,8 @@ class MetadataDumper(SqlExecutionMixin):
                     continue
 
                 # collect all the referenced stages
-                if domain in ["procedure", "function"]:
-                    for stage_id in self._get_callable_stage_ids(
+                if domain in STAGE_BACKED_DOMAINS:
+                    for stage_id in self._get_referenced_stage_ids(
                         domain, object_identifier
                     ):
                         if stage_id not in self.referenced_stage_ids:
