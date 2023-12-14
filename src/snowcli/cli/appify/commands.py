@@ -9,6 +9,8 @@ from snowcli.cli.nativeapp.init import nativeapp_init
 from snowcli.output.decorators import with_output
 from snowcli.output.types import CommandResult, MessageResult
 
+from snowcli.cli.project.schemas.project_definition import project_schema
+
 from snowcli.cli.appify.metadata import MetadataDumper
 from snowcli.cli.appify.generate import (
     modifications,
@@ -72,7 +74,9 @@ def appify(
             package_sql.write("\n")
 
     # modify the project definition
-    with modifications(project.path / "snowflake.yml") as snowflake_yml:
+    with modifications(
+        project.path / "snowflake.yml", schema=project_schema
+    ) as snowflake_yml:
         # include referenced stages + metadata in our app stage
         artifacts = snowflake_yml["native_app"]["artifacts"].data
         artifacts.append(
@@ -94,5 +98,11 @@ def appify(
         if seen_external_tables:
             # XXX: changing the template could cause us to lose other "package:" keys
             snowflake_yml["native_app"]["package"] = {"scripts": ["package.sql"]}
+
+    # if we found any streamlits, just choose the first
+    if dumper.streamlits:
+        streamlit = dumper.streamlits[0]
+        with modifications(project.path / "app" / "manifest.yml") as manifest_yml:
+            manifest_yml["artifacts"]["default_streamlit"] = streamlit
 
     return MessageResult(f"Created Native Application project from {db}.")

@@ -5,7 +5,7 @@ import logging
 from textwrap import dedent
 from contextlib import contextmanager
 from pathlib import Path
-from strictyaml import YAML, load
+from strictyaml import YAML, load, MapCombined, Str, Any
 from click import ClickException
 
 from snowcli.cli.appify.util import split_fqn_id, fqn_matches
@@ -16,7 +16,6 @@ from snowcli.cli.project.util import (
     IDENTIFIER,
     DB_SCHEMA_AND_NAME,
 )
-from snowcli.cli.project.schemas.project_definition import project_schema
 
 log = logging.getLogger(__name__)
 
@@ -51,12 +50,14 @@ class UnsupportedExternalReferenceError(ClickException):
 
 
 @contextmanager
-def modifications(path: Path) -> Generator[YAML, None, None]:
+def modifications(
+    path: Path, schema=MapCombined({}, Str(), Any())
+) -> Generator[YAML, None, None]:
     """
     Read, then write back modifications made to a project definition file.
     """
     with open(path, "r") as f:
-        yml = load(f.read(), schema=project_schema)
+        yml = load(f.read(), schema=schema)
 
     yield yml
 

@@ -79,6 +79,7 @@ class MetadataDumper(SqlExecutionMixin):
     database: str
     project_path: Path
     schemas: List[dict]
+    streamlits: List[str]
     referenced_stage_ids: List[str]
     references: dict
     ordering_graph: dict
@@ -90,6 +91,7 @@ class MetadataDumper(SqlExecutionMixin):
         self.database = database.upper()
         self.project_path = project_path
         self.schemas = []
+        self.streamlits = []
         self.referenced_stage_ids = []
         self.references = {}
         self.ordering_graph = {}
@@ -211,6 +213,10 @@ class MetadataDumper(SqlExecutionMixin):
                     ):
                         if stage_id not in self.referenced_stage_ids:
                             self.referenced_stage_ids.append(stage_id)
+
+                # record all discovered streamlits
+                if domain == "streamlit":
+                    self.streamlits.append(f"{schema}.{object_name}")
 
                 literal = self._object_literal(schema, object_name)
                 ddl_cursor = self._execute_query(
